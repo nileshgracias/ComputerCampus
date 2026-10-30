@@ -479,7 +479,7 @@ input[type="text"]:focus { border-color: rgba(255,255,255,0.6); background: rgba
 .cc-progress-item.passed{background:#166534}
 .cc-progress-item.failed{background:#7f1d1d}
 .cc-progress-item strong{display:block;font-size:15px}
-@media(max-width:800px){#cc-challenge-progress{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:800px){#cc-challenge-progress{grid-template-columns:repeat(5,minmax(140px,1fr));overflow-x:auto}.cc-progress-item{font-size:12px}}
 </style>
 </head>
 <body>
@@ -527,7 +527,7 @@ input[type="text"]:focus { border-color: rgba(255,255,255,0.6); background: rgba
   <p>Du bearbeitest fünf Bereiche mit jeweils <strong>20 Aufgaben</strong>:</p>
   <p>Einfachklick · Doppelklick · Rechtsklick · Fenster schließen · Drag &amp; Drop</p>
   <p><strong>Bestehensregel:</strong> In jedem Bereich mindestens <strong>16 von 20 Aufgaben (80 %)</strong> richtig lösen. Nur dann wird das Tastaturtraining freigeschaltet.</p>
-  <p><strong>Zeit:</strong> Insgesamt 15 Minuten. Pro Aufgabe hast du maximal 8 Sekunden. Verpasste Aufgaben zählen als Fehler.</p>
+  <p><strong>Zeit:</strong> Insgesamt 20 Minuten. Pro Aufgabe hast du maximal 10 Sekunden. Verpasste Aufgaben zählen als Fehler.</p>
   <p>Deinen Fortschritt siehst du oben im Spielfeld. Die Bedienungshilfe ist in der Challenge ausgeschaltet.</p>
   <button class="btn-primary" onclick="ccStartChallenge()">Verstanden – Countdown starten</button>
   <p><button type="button" onclick="resetToStart()" style="margin-top:12px">Zurück zur Auswahl</button></p>
@@ -579,7 +579,7 @@ input[type="text"]:focus { border-color: rgba(255,255,255,0.6); background: rgba
 
 <script>
 // ===== CONFIG =====
-const GAME_DURATION = 900; // 15 Minuten für 5 × 20 Aufgaben
+const GAME_DURATION = 1200; // 20 Minuten für 5 × 20 Aufgaben
 const LB_KEY = 'desktop_challenge_v1';
 
 const FOLDER_NAMES = [
@@ -598,7 +598,15 @@ let practiceMode = false;
 let ccChallengeHits = 0;
 let ccChallengeAttempts = 0;
 const CC_CHALLENGE_TYPES = ['single','double','right','close','drag'];
-const CC_CHALLENGE_TASKS = CC_CHALLENGE_TYPES.flatMap(task => Array(20).fill(task));
+let CC_CHALLENGE_TASKS = [];
+function ccCreateBalancedTasks() {
+  const tasks = CC_CHALLENGE_TYPES.flatMap(task => Array(20).fill(task));
+  for (let i = tasks.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [tasks[i], tasks[j]] = [tasks[j], tasks[i]];
+  }
+  return tasks;
+}
 let ccHitsByType = Object.fromEntries(CC_CHALLENGE_TYPES.map(task => [task,0]));
 const CC_PROGRESS_KEY = 'computercampus-progress-v1';
 let score       = 0;
@@ -672,6 +680,7 @@ function startGame() {
   score = 0; timeLeft = GAME_DURATION; combo = 0; gameActive = false;
   ccChallengeHits = 0; ccChallengeAttempts = 0;
   ccHitsByType = Object.fromEntries(CC_CHALLENGE_TYPES.map(task => [task,0]));
+  CC_CHALLENGE_TASKS = ccCreateBalancedTasks();
   ccHelpManual = null;
   ccFirstTaskPending = true;
   document.getElementById('cc-help').style.display = practiceMode ? 'flex' : 'none';
@@ -730,10 +739,10 @@ function updateHUD() {
   const labels = {single:'Einfachklick',double:'Doppelklick',right:'Rechtsklick',close:'Fenster schließen',drag:'Drag & Drop'};
   progress.replaceChildren();
   CC_CHALLENGE_TYPES.forEach((task,index) => {
-    const completed = Math.max(0,Math.min(20,ccChallengeAttempts - index*20));
+    const completed = CC_CHALLENGE_TASKS.slice(0,ccChallengeAttempts).filter(t => t === task).length;
     const hits = ccHitsByType[task];
     const card = document.createElement('div');
-    const isActive = ccChallengeAttempts < 100 && Math.floor(ccChallengeAttempts/20) === index;
+    const isActive = ccChallengeAttempts < 100 && CC_CHALLENGE_TASKS[ccChallengeAttempts] === task;
     card.className = 'cc-progress-item' + (isActive ? ' active' : '') + (completed === 20 ? (hits >= 16 ? ' passed' : ' failed') : '');
     const name = document.createElement('span');
     name.textContent = labels[task];
@@ -856,7 +865,7 @@ function spawnNext() {
   setTaskBar(currentTask);
   ccRenderHelp(currentTask);
 
-  const dur = practiceMode ? targetDuration(currentTask) : 8000;
+  const dur = practiceMode ? targetDuration(currentTask) : 10000;
 
   if (currentTask === 'drag') {
     const [pos] = spreadPositions(1, dw, dh, elW, elH);
