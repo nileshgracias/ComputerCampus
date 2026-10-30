@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Desktop-Challenge – Maustraining</title>
+<title>Desktop-Challenge – Maustraining mit Rechtsklick</title>
 <style>
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -475,7 +475,7 @@ input[type="text"]:focus { border-color: rgba(255,255,255,0.6); background: rgba
 <div class="screen" id="screen-start">
   <div class="start-card">
     <h1>🖱️ Desktop-Challenge</h1>
-    <p class="sub">Maustraining · 60 Sekunden · Klasse 5</p>
+    <p class="sub">Maustraining · 60 Sekunden · Klasse 5 · NEU: Rechtsklick</p>
     <div class="instructions">
       <div class="task-row">
         <span class="badge b-green">Einmal klicken</span>
@@ -597,6 +597,7 @@ function showScreen(id) {
 const ccSuccess = {single:0,double:0,right:0,close:0,drag:0};
 let ccHelpManual = null;
 let ccShownTask = 'single';
+let ccFirstTaskPending = true;
 const ccInstructions = {
  single:'Einmal mit der linken Maustaste klicken.',
  double:'Zweimal schnell mit der linken Maustaste klicken.',
@@ -636,6 +637,7 @@ function startGame() {
   playerName = document.getElementById('name-input').value.trim() || 'Anonym';
   score = 0; timeLeft = GAME_DURATION; combo = 0; gameActive = false;
   ccHelpManual = null;
+  ccFirstTaskPending = true;
   document.getElementById('cc-help').style.display = practiceMode ? 'flex' : 'none';
   ccRenderHelp('single');
   document.getElementById('hud-name').textContent = playerName;
@@ -781,11 +783,12 @@ function spawnNext() {
   const dh = desktop.clientHeight;
   const elW = 215, elH = 95;
 
-  const waveSize = pickWaveSize();
+  const waveSize = ccFirstTaskPending ? 1 : pickWaveSize();
 
   // Drag only allowed as single target
   if (waveSize === 1) {
-    currentTask = pickTask();
+    currentTask = ccFirstTaskPending ? 'right' : pickTask();
+    ccFirstTaskPending = false;
   } else {
     currentTask = 'mixed';
   }
