@@ -1,0 +1,1056 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Desktop-Challenge – Maustraining</title>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  overflow: hidden;
+  user-select: none;
+  height: 100vh;
+  width: 100vw;
+}
+
+/* ---- Screens ---- */
+.screen {
+  position: fixed; inset: 0;
+  display: flex; align-items: center; justify-content: center;
+}
+.screen.hidden { display: none; }
+
+/* ---- Start Screen ---- */
+#screen-start {
+  background: linear-gradient(160deg, #1a3a5c 0%, #1d5ea8 60%, #3b82e0 100%);
+  flex-direction: column;
+  color: white;
+}
+
+.start-card {
+  background: rgba(255,255,255,0.1);
+  border: 1px solid rgba(255,255,255,0.2);
+  border-radius: 18px;
+  padding: 2.5rem 3rem;
+  text-align: center;
+  max-width: 500px;
+  width: 92%;
+}
+
+.start-card h1 { font-size: 2rem; font-weight: 800; margin-bottom: .3rem; }
+.start-card .sub { font-size: .95rem; opacity: .75; margin-bottom: 1.75rem; }
+
+.instructions {
+  background: rgba(0,0,0,0.25);
+  border-radius: 12px;
+  padding: 1rem 1.2rem;
+  margin-bottom: 1.5rem;
+  text-align: left;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.task-row { display: flex; align-items: center; gap: 10px; font-size: .9rem; }
+
+.badge {
+  padding: 3px 11px;
+  border-radius: 20px;
+  font-size: .8rem;
+  font-weight: 700;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+.b-green  { background: #16a34a; }
+.b-blue   { background: #d97706; }
+.b-red    { background: #dc2626; }
+.b-purple { background: #7c3aed; }
+
+input[type="text"] {
+  width: 100%;
+  padding: .7rem 1rem;
+  border-radius: 9px;
+  border: 2px solid rgba(255,255,255,0.25);
+  background: rgba(255,255,255,0.12);
+  color: white;
+  font-size: 1rem;
+  outline: none;
+  margin-bottom: 1rem;
+  text-align: center;
+}
+input[type="text"]::placeholder { color: rgba(255,255,255,0.45); }
+input[type="text"]:focus { border-color: rgba(255,255,255,0.6); background: rgba(255,255,255,0.18); }
+
+.btn-primary {
+  background: #f59e0b;
+  color: #1a1200;
+  border: none;
+  padding: .85rem 2rem;
+  font-size: 1.1rem;
+  font-weight: 800;
+  border-radius: 10px;
+  cursor: pointer;
+  width: 100%;
+  transition: background .12s, transform .08s;
+}
+.btn-primary:hover  { background: #fbbf24; }
+.btn-primary:active { transform: scale(.97); }
+
+.mode-buttons { display: flex; gap: 10px; margin-top: 0; }
+.btn-mode {
+  flex: 1;
+  padding: .8rem 1rem;
+  border-radius: 10px;
+  font-size: .95rem;
+  font-weight: 700;
+  border: 2px solid rgba(255,255,255,0.2);
+  background: rgba(255,255,255,0.1);
+  color: white;
+  cursor: pointer;
+  line-height: 1.4;
+  transition: background .12s, border-color .12s, transform .08s;
+}
+.btn-mode:hover  { background: rgba(255,255,255,0.22); border-color: rgba(255,255,255,0.5); }
+.btn-mode:active { transform: scale(.97); }
+.btn-mode small  { display: block; font-weight: 400; opacity: .65; font-size: .8rem; }
+.btn-mode.active { background: rgba(255,255,255,0.25); border-color: rgba(255,255,255,0.7); }
+.mode-buttons    { margin-bottom: 1rem; }
+
+#stop-btn {
+  margin-left: auto;
+  background: rgba(255,255,255,0.15);
+  border: 1px solid rgba(255,255,255,0.3);
+  color: white;
+  font-size: .82rem;
+  font-weight: 700;
+  padding: 4px 14px;
+  border-radius: 20px;
+  cursor: pointer;
+  transition: background .12s;
+}
+#stop-btn:hover { background: rgba(255,255,255,0.28); }
+
+/* ---- Game Screen ---- */
+#screen-game {
+  background: linear-gradient(180deg, #1565c0 0%, #1976d2 45%, #42a5f5 100%);
+  flex-direction: column;
+  align-items: stretch;
+  justify-content: flex-start;
+}
+
+/* HUD bar */
+#hud {
+  background: rgba(0,0,0,0.4);
+  padding: .55rem 1.2rem;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  color: white;
+  font-size: .9rem;
+  flex-shrink: 0;
+  z-index: 10;
+}
+.hud-name { font-weight: 700; opacity: .9; max-width: 160px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.hud-score-wrap { background: rgba(255,255,255,0.15); padding: 3px 13px; border-radius: 20px; }
+.hud-score-wrap span { font-weight: 800; font-size: 1rem; }
+#hud-timer {
+  margin-left: auto;
+  font-size: 1.5rem;
+  font-weight: 800;
+  min-width: 44px;
+  text-align: right;
+  transition: color .3s;
+}
+#hud-timer.urgent { color: #ff5252; }
+
+/* Task instruction bar */
+#task-bar {
+  text-align: center;
+  padding: .45rem .5rem;
+  font-size: 1.35rem;
+  font-weight: 800;
+  color: white;
+  text-shadow: 0 2px 8px rgba(0,0,0,0.35);
+  flex-shrink: 0;
+  min-height: 46px;
+  transition: color .2s;
+}
+
+/* Desktop play area */
+#desktop {
+  flex: 1;
+  position: relative;
+  overflow: hidden;
+  cursor: default;
+}
+
+/* ---- Targets ---- */
+.target {
+  position: absolute;
+  cursor: pointer;
+  animation: popIn .15s cubic-bezier(.34,1.56,.64,1);
+}
+.target.dying { animation: popOut .12s ease-in forwards; pointer-events: none; }
+
+@keyframes popIn {
+  from { transform: scale(0.3); opacity: 0; }
+  to   { transform: scale(1);   opacity: 1; }
+}
+@keyframes popOut {
+  to { transform: scale(0.3); opacity: 0; }
+}
+
+/* Folder */
+.folder-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
+  padding: 10px 12px 8px;
+  border-radius: 10px;
+  border: 3px solid transparent;
+  transition: border-color .15s;
+}
+.folder-icon {
+  width: 68px;
+  height: 56px;
+  position: relative;
+  filter: drop-shadow(0 3px 6px rgba(0,0,0,0.35));
+}
+.folder-icon::before {
+  content: '';
+  position: absolute;
+  top: 10px; left: 0;
+  width: 100%; height: calc(100% - 10px);
+  background: linear-gradient(160deg, #ffca28, #f9a825);
+  border-radius: 3px 6px 6px 6px;
+}
+.folder-icon::after {
+  content: '';
+  position: absolute;
+  top: 0; left: 0;
+  width: 42%; height: 14px;
+  background: #f9a825;
+  border-radius: 5px 5px 0 0;
+}
+.folder-label {
+  font-size: 12px;
+  color: white;
+  text-shadow: 0 1px 3px rgba(0,0,0,0.8);
+  font-weight: 700;
+  max-width: 90px;
+  text-align: center;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Timer progress bar under folder */
+.target-timer {
+  position: absolute;
+  bottom: 2px; left: 10px; right: 10px;
+  height: 3px;
+  border-radius: 2px;
+  transform-origin: left;
+}
+
+/* Window target */
+.window-wrap {
+  width: 210px;
+  border-radius: 7px;
+  overflow: hidden;
+  box-shadow: 0 6px 24px rgba(0,0,0,0.5);
+}
+.win-titlebar {
+  background: #1565c0;
+  display: flex;
+  align-items: center;
+  padding: 5px 7px;
+  gap: 6px;
+  position: relative;
+}
+.win-title-text {
+  color: white;
+  font-size: 12px;
+  font-weight: 700;
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.win-close {
+  width: 22px; height: 22px;
+  background: #e53935;
+  border: none;
+  border-radius: 4px;
+  color: white;
+  font-size: 13px;
+  font-weight: 800;
+  cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+  transition: background .1s, transform .08s;
+  line-height: 1;
+}
+.win-close:hover  { background: #c62828; }
+.win-close:active { transform: scale(.9); }
+.win-body {
+  background: #f5f5f5;
+  height: 55px;
+  padding: 8px 10px;
+  font-size: 11px;
+  color: #757575;
+  display: flex;
+  align-items: center;
+}
+
+/* ---- Countdown overlay ---- */
+#countdown {
+  position: fixed; inset: 0;
+  background: rgba(0,0,0,0.55);
+  display: flex; align-items: center; justify-content: center;
+  z-index: 200;
+  color: white;
+  font-size: 9rem;
+  font-weight: 900;
+  text-shadow: 0 4px 30px rgba(0,0,0,0.5);
+  animation: countPulse .5s ease-out;
+}
+#countdown.hidden { display: none; }
+@keyframes countPulse {
+  from { transform: scale(1.4); opacity: 0; }
+  to   { transform: scale(1);   opacity: 1; }
+}
+
+/* ---- Score popup ---- */
+.score-popup {
+  position: fixed;
+  font-size: 1.5rem;
+  font-weight: 900;
+  pointer-events: none;
+  z-index: 300;
+  animation: floatUp .75s ease-out forwards;
+  text-shadow: 0 2px 6px rgba(0,0,0,0.5);
+}
+@keyframes floatUp {
+  0%   { transform: translateY(0)   scale(1);   opacity: 1; }
+  100% { transform: translateY(-65px) scale(1.15); opacity: 0; }
+}
+
+/* ---- Miss flash ---- */
+.miss-flash {
+  position: fixed; inset: 0;
+  background: rgba(229,57,53,0.2);
+  pointer-events: none;
+  z-index: 150;
+  animation: flashFade .35s ease-out forwards;
+}
+@keyframes flashFade {
+  to { opacity: 0; }
+}
+
+/* ---- Combo badge ---- */
+#combo-badge {
+  position: fixed;
+  top: 80px; right: 16px;
+  background: #f59e0b;
+  color: #1a1200;
+  font-size: .85rem;
+  font-weight: 800;
+  padding: 4px 12px;
+  border-radius: 20px;
+  z-index: 100;
+  opacity: 0;
+  transition: opacity .2s;
+  pointer-events: none;
+}
+#combo-badge.visible { opacity: 1; }
+
+/* ---- End Screen ---- */
+#screen-end {
+  background: linear-gradient(160deg, #0d2b4e 0%, #1a4d9e 100%);
+  flex-direction: column;
+  color: white;
+}
+
+.end-card {
+  background: rgba(255,255,255,0.1);
+  border: 1px solid rgba(255,255,255,0.2);
+  border-radius: 18px;
+  padding: 2rem 2.5rem;
+  text-align: center;
+  max-width: 520px;
+  width: 92%;
+}
+.end-card h2 { font-size: 1.5rem; font-weight: 700; margin-bottom: .5rem; }
+
+.final-score-wrap { margin: .6rem 0 .3rem; }
+.final-score { font-size: 4.5rem; font-weight: 900; color: #fbbf24; line-height: 1; }
+.score-sub { font-size: .85rem; opacity: .65; margin-bottom: 1.4rem; }
+
+.leaderboard {
+  background: rgba(0,0,0,0.25);
+  border-radius: 12px;
+  padding: 1rem 1.1rem;
+  margin-bottom: 1.4rem;
+  text-align: left;
+}
+.lb-head {
+  font-size: .78rem;
+  opacity: .6;
+  text-transform: uppercase;
+  letter-spacing: .06em;
+  margin-bottom: .75rem;
+  font-weight: 700;
+}
+.lb-entry {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 5px 0;
+  font-size: .95rem;
+  border-bottom: 1px solid rgba(255,255,255,0.08);
+}
+.lb-entry:last-child { border-bottom: none; }
+.lb-rank { width: 22px; font-weight: 700; opacity: .5; font-size: .85rem; text-align: center; }
+.lb-name { flex: 1; font-weight: 600; }
+.lb-pts  { font-weight: 800; color: #fbbf24; }
+.lb-me   { color: #fbbf24; }
+.lb-me .lb-rank { opacity: 1; }
+
+.end-hint {
+  font-size: .85rem;
+  opacity: .65;
+  margin-bottom: 1.2rem;
+  line-height: 1.5;
+}
+
+/* ---- Drop zone ---- */
+.drop-zone {
+  position: absolute;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  font-weight: 800;
+  pointer-events: none;
+  text-shadow: 0 1px 3px rgba(0,0,0,0.4);
+  animation: dzPulse 0.9s ease-in-out infinite alternate;
+}
+@keyframes dzPulse {
+  from { opacity: .55; transform: scale(.97); }
+  to   { opacity: 1;   transform: scale(1);   }
+}
+
+/* ---- Shrink animation (inserted dynamically) ---- */
+</style>
+</head>
+<body>
+
+<!-- ====== START SCREEN ====== -->
+<div class="screen" id="screen-start">
+  <div class="start-card">
+    <h1>🖱️ Desktop-Challenge</h1>
+    <p class="sub">Maustraining · 60 Sekunden · Klasse 5</p>
+    <div class="instructions">
+      <div class="task-row">
+        <span class="badge b-green">Einmal klicken</span>
+        <span>Einmal auf den Ordner klicken</span>
+      </div>
+      <div class="task-row">
+        <span class="badge b-blue">Doppelklick</span>
+        <span>Zweimal schnell auf den Ordner klicken</span>
+      </div>
+      <div class="task-row">
+        <span class="badge b-red">Fenster schließen</span>
+        <span>Auf das rote ✕ in der Titelleiste klicken</span>
+      </div>
+      <div class="task-row">
+        <span class="badge b-purple">Fenster verschieben</span>
+        <span>Titelleiste halten &amp; in die Zielzone ziehen</span>
+      </div>
+    </div>
+    <input type="text" id="name-input" placeholder="Dein Name …" maxlength="20" autocomplete="off">
+    <div class="mode-buttons">
+      <button class="btn-mode active" id="mode-challenge" onclick="selectMode('challenge')">⏱️ Challenge<small>60 Sekunden</small></button>
+      <button class="btn-mode" id="mode-practice" onclick="selectMode('practice')">🎯 Übungsmodus<small>Kein Zeitlimit</small></button>
+    </div>
+    <button class="btn-primary" onclick="startGame()">Los geht's! 🚀</button>
+  </div>
+</div>
+
+<!-- ====== GAME SCREEN ====== -->
+<div class="screen hidden" id="screen-game">
+  <div id="hud">
+    <span class="hud-name" id="hud-name">Spieler</span>
+    <div class="hud-score-wrap">Punkte: <span id="hud-score">0</span></div>
+    <span id="hud-timer">60</span>
+    <button id="stop-btn" class="hidden" onclick="endGame()">■ Beenden</button>
+  </div>
+  <div id="task-bar"></div>
+  <div id="desktop"></div>
+</div>
+
+<!-- Combo badge -->
+<div id="combo-badge">🔥 Combo!</div>
+
+<!-- Countdown overlay -->
+<div id="countdown" class="hidden"></div>
+
+<!-- ====== END SCREEN ====== -->
+<div class="screen hidden" id="screen-end">
+  <div class="end-card">
+    <h2 id="end-heading">Zeit abgelaufen! ⏱️</h2>
+    <div class="final-score-wrap">
+      <div class="final-score" id="end-score">0</div>
+    </div>
+    <div class="score-sub">Punkte · <span id="end-name"></span></div>
+    <div class="leaderboard" id="lb-section">
+      <div class="lb-head">🏆 Bestenliste (dieser PC)</div>
+      <div id="lb-list"></div>
+    </div>
+    <p class="end-hint" id="end-hint">Vergleiche deinen Score mit deinen Mitschülern!</p>
+    <button class="btn-primary" onclick="resetToStart()">Nochmal spielen</button>
+  </div>
+</div>
+
+<script>
+// ===== CONFIG =====
+const GAME_DURATION = 60;
+const LB_KEY = 'desktop_challenge_v1';
+
+const FOLDER_NAMES = [
+  'Hausaufgaben', 'Bilder', 'Musik', 'Downloads',
+  'Dokumente', 'Informatik', 'Klasse 5a', 'Projekte',
+  'Videos', 'Fotos', 'Spiele', 'Schule'
+];
+
+const WINDOW_TITLES = [
+  'Datei-Explorer', 'Notepad', 'Bilder', 'Dokumente',
+  'Downloads', 'Rechner', 'Paint', 'Einstellungen'
+];
+
+// ===== STATE =====
+let practiceMode = false;
+let score       = 0;
+let timeLeft    = GAME_DURATION;
+let gameActive  = false;
+let playerName  = '';
+let timerIntvl  = null;
+let activeTargets = [];
+let targetTmout   = null;
+let combo       = 0;
+let comboTmout  = null;
+let currentTask = null;
+let dropZoneEl  = null;
+let isDragging  = false;
+let dragEl      = null;
+let dragOffsetX = 0;
+let dragOffsetY = 0;
+
+// ===== HELPERS =====
+function rand(arr)    { return arr[Math.floor(Math.random() * arr.length)]; }
+function clamp(v,a,b) { return Math.max(a, Math.min(b, v)); }
+
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.add('hidden'));
+  document.getElementById(id).classList.remove('hidden');
+}
+
+// ===== GAME FLOW =====
+function selectMode(mode) {
+  practiceMode = (mode === 'practice');
+  document.getElementById('mode-challenge').classList.toggle('active', !practiceMode);
+  document.getElementById('mode-practice').classList.toggle('active',  practiceMode);
+}
+
+function startGame() {
+  playerName = document.getElementById('name-input').value.trim() || 'Anonym';
+  score = 0; timeLeft = GAME_DURATION; combo = 0; gameActive = false;
+  document.getElementById('hud-name').textContent = playerName;
+  document.getElementById('hud-timer').classList.remove('urgent');
+  document.getElementById('stop-btn').classList.toggle('hidden', !practiceMode);
+  showScreen('screen-game');
+  updateHUD();
+  runCountdown(3);
+}
+
+function runCountdown(n) {
+  const el = document.getElementById('countdown');
+  el.classList.remove('hidden');
+
+  // Force reflow so animation replays each tick
+  el.style.animation = 'none';
+  void el.offsetWidth;
+  el.style.animation = 'countPulse .5s ease-out';
+
+  el.textContent = n > 0 ? n : 'Los!';
+
+  if (n > 0) {
+    setTimeout(() => runCountdown(n - 1), 850);
+  } else {
+    setTimeout(() => {
+      el.classList.add('hidden');
+      beginGame();
+    }, 650);
+  }
+}
+
+function beginGame() {
+  gameActive = true;
+  if (!practiceMode) timerIntvl = setInterval(tickTimer, 1000);
+  spawnNext();
+}
+
+function tickTimer() {
+  timeLeft = Math.max(0, timeLeft - 1);
+  updateHUD();
+  if (timeLeft <= 10) document.getElementById('hud-timer').classList.add('urgent');
+  if (timeLeft === 0) endGame();
+}
+
+function updateHUD() {
+  document.getElementById('hud-score').textContent = score;
+  document.getElementById('hud-timer').textContent = practiceMode ? '∞' : timeLeft;
+}
+
+// ===== TASK LOGIC =====
+function pickTask() {
+  const r = Math.random();
+  if (r < 0.25) return 'single';
+  if (r < 0.50) return 'double';
+  if (r < 0.75) return 'close';
+  return 'drag';
+}
+
+function pickNonDragTask() {
+  const r = Math.random();
+  if (r < 0.333) return 'single';
+  if (r < 0.667) return 'double';
+  return 'close';
+}
+
+function targetDuration(task) {
+  return task === 'drag' ? 5000 : 3750;
+}
+
+const TASK_LABELS = {
+  single: '👆 Einmal klicken!',
+  double: '✌️ Doppelklick!',
+  close:  '✕ Fenster schließen!',
+  drag:   '🖱️ Fenster verschieben!',
+  mixed:  '👀 Achte auf die Farbe!',
+};
+const TASK_COLORS = {
+  single: '#4caf50',
+  double: '#f59e0b',
+  close:  '#ef5350',
+  drag:   '#7c3aed',
+  mixed:  '#ffffff',
+};
+
+function setTaskBar(task) {
+  const bar = document.getElementById('task-bar');
+  bar.textContent = TASK_LABELS[task];
+  bar.style.color = TASK_COLORS[task];
+  bar.style.textShadow = `0 2px 10px ${TASK_COLORS[task]}99`;
+}
+
+// ===== SPAWN / REMOVE =====
+function clearTarget() {
+  clearTimeout(targetTmout);
+  targetTmout = null;
+  activeTargets.forEach(el => el.remove());
+  activeTargets = [];
+  if (dropZoneEl) { dropZoneEl.remove(); dropZoneEl = null; }
+  isDragging = false;
+  dragEl = null;
+}
+
+function pickWaveSize() {
+  const r = Math.random();
+  if (r < 0.60) return 1;
+  if (r < 0.90) return 2;
+  return 3;
+}
+
+function spreadPositions(count, dw, dh, elW, elH) {
+  const pad = 60;
+  const minDist = Math.max(elW, elH) + 20;
+  const positions = [];
+  let attempts = 0;
+  while (positions.length < count && attempts < 150) {
+    attempts++;
+    const x = pad + Math.random() * (dw - elW - pad * 2);
+    const y = pad + Math.random() * (dh - elH - pad * 2);
+    if (!positions.some(p => Math.hypot(p.x - x, p.y - y) < minDist))
+      positions.push({ x, y });
+  }
+  // Fallback: spread evenly across width if random placement failed
+  while (positions.length < count) {
+    const i = positions.length;
+    positions.push({
+      x: pad + (i / count) * (dw - elW - pad * 2),
+      y: pad + Math.random() * (dh - elH - pad * 2),
+    });
+  }
+  return positions;
+}
+
+function spawnNext() {
+  if (!gameActive) return;
+  clearTarget();
+
+  const desktop = document.getElementById('desktop');
+  const dw = desktop.clientWidth;
+  const dh = desktop.clientHeight;
+  const elW = 215, elH = 95;
+
+  const waveSize = pickWaveSize();
+
+  // Drag only allowed as single target
+  if (waveSize === 1) {
+    currentTask = pickTask();
+  } else {
+    currentTask = 'mixed';
+  }
+  setTaskBar(currentTask);
+
+  const dur = targetDuration(currentTask);
+
+  if (currentTask === 'drag') {
+    const [pos] = spreadPositions(1, dw, dh, elW, elH);
+    const winEl = buildDragWindowTarget(dur);
+    winEl.style.left = pos.x + 'px';
+    winEl.style.top  = pos.y + 'px';
+    desktop.appendChild(winEl);
+    activeTargets.push(winEl);
+
+    let dzPos, att = 0;
+    do {
+      dzPos = {
+        x: 60 + Math.random() * (dw - elW - 120),
+        y: 60 + Math.random() * (dh - elH - 60),
+      };
+      att++;
+    } while (Math.hypot(dzPos.x - pos.x, dzPos.y - pos.y) < 210 && att < 80);
+    dropZoneEl = buildDropZone(elW, elH, dur);
+    dropZoneEl.style.left = dzPos.x + 'px';
+    dropZoneEl.style.top  = dzPos.y + 'px';
+    desktop.appendChild(dropZoneEl);
+  } else {
+    // Each target picks its own task (all non-drag for multi-waves)
+    const tasks = Array.from({ length: waveSize }, () =>
+      currentTask === 'mixed' ? pickNonDragTask() : currentTask
+    );
+    const positions = spreadPositions(waveSize, dw, dh, elW, elH);
+    tasks.forEach((task, i) => {
+      const el = task === 'close'
+        ? buildWindowTarget(dur)
+        : buildFolderTarget(task, dur);
+      el.style.left = positions[i].x + 'px';
+      el.style.top  = positions[i].y + 'px';
+      desktop.appendChild(el);
+      activeTargets.push(el);
+    });
+  }
+
+  if (!practiceMode) {
+    targetTmout = setTimeout(() => {
+      if (!gameActive) return;
+      const remaining = [...activeTargets];
+      activeTargets = [];
+      if (dropZoneEl) { dropZoneEl.remove(); dropZoneEl = null; }
+      isDragging = false; dragEl = null;
+      remaining.forEach(el => { el.classList.add('dying'); setTimeout(() => el.remove(), 130); });
+      if (remaining.length > 0) {
+        combo = 0; score = Math.max(0, score - remaining.length * 5);
+        hideComboBadge(); updateHUD(); flashMiss();
+      }
+      setTimeout(spawnNext, 150);
+    }, dur);
+  }
+}
+
+// ===== TARGETS =====
+function buildFolderTarget(task, dur) {
+  const name  = rand(FOLDER_NAMES);
+  const color = TASK_COLORS[task];
+
+  const el = document.createElement('div');
+  el.className = 'target';
+  el.innerHTML = `
+    <div class="folder-wrap" style="border-color:${color}; background:rgba(0,0,0,0.18);">
+      <div class="folder-icon"></div>
+      <div class="folder-label">${name}</div>
+    </div>
+    ${practiceMode ? '' : `<div class="target-timer" style="background:${color};
+         animation:shrinkBar ${dur}ms linear forwards;"></div>`}
+  `;
+
+  if (task === 'single') {
+    el.addEventListener('click', (e) => { e.stopPropagation(); onHit(el); });
+  } else {
+    el.addEventListener('dblclick', (e) => { e.stopPropagation(); onHit(el); });
+    el.addEventListener('click',    (e) => {
+      e.stopPropagation();
+      // Visual hint: brief yellow border flash on single click of double-click target
+      const wrap = el.querySelector('.folder-wrap');
+      wrap.style.borderColor = '#f59e0b';
+      setTimeout(() => { if (el.isConnected) wrap.style.borderColor = color; }, 300);
+    });
+  }
+  return el;
+}
+
+function buildWindowTarget(dur) {
+  const title = rand(WINDOW_TITLES);
+
+  const el = document.createElement('div');
+  el.className = 'target';
+  el.innerHTML = `
+    <div class="window-wrap">
+      <div class="win-titlebar">
+        <span class="win-title-text">${title}</span>
+        <button class="win-close">✕</button>
+        ${practiceMode ? '' : `<div class="target-timer" style="background:#ef5350;
+             animation:shrinkBar ${dur}ms linear forwards;
+             position:absolute; bottom:0; left:0; right:0; height:3px; border-radius:0;"></div>`}
+      </div>
+      <div class="win-body">Dieses Fenster ist geöffnet. Schließe es!</div>
+    </div>
+  `;
+
+  el.querySelector('.win-close').addEventListener('click', (e) => {
+    e.stopPropagation();
+    onHit(el);
+  });
+  return el;
+}
+
+function buildDragWindowTarget(dur) {
+  const title = rand(WINDOW_TITLES);
+  const color = TASK_COLORS['drag'];
+  const el = document.createElement('div');
+  el.className = 'target drag-win';
+  el.innerHTML = `
+    <div class="window-wrap" style="cursor:default;">
+      <div class="win-titlebar" style="background:${color}; cursor:grab;">
+        <span class="win-title-text">${title}</span>
+        <span style="font-size:11px;color:rgba(255,255,255,0.7);flex-shrink:0;">← ziehen</span>
+        ${practiceMode ? '' : `<div class="target-timer" style="background:rgba(255,255,255,0.5);
+             animation:shrinkBar ${dur}ms linear forwards;
+             position:absolute; bottom:0; left:0; right:0; height:3px; border-radius:0;"></div>`}
+      </div>
+      <div class="win-body">Titelleiste halten und in die Zielzone ziehen!</div>
+    </div>
+  `;
+  const titlebar = el.querySelector('.win-titlebar');
+  titlebar.addEventListener('mousedown', (e) => {
+    if (!gameActive) return;
+    e.preventDefault();
+    isDragging   = true;
+    dragEl       = el;
+    const r      = el.getBoundingClientRect();
+    dragOffsetX  = e.clientX - r.left;
+    dragOffsetY  = e.clientY - r.top;
+    titlebar.style.cursor = 'grabbing';
+    el.style.zIndex = '50';
+  });
+  return el;
+}
+
+function buildDropZone(w, h, dur) {
+  const color = TASK_COLORS['drag'];
+  const el = document.createElement('div');
+  el.className = 'drop-zone';
+  el.style.cssText = `width:${w}px; height:${h}px;
+    border: 3px dashed ${color}; background:${color}22; color:${color};`;
+  el.innerHTML = `<span>📂 Hier ablegen!</span>`;
+  return el;
+}
+
+// ===== HIT =====
+function onHit(el) {
+  if (!gameActive || !activeTargets.includes(el)) return;
+
+  combo++;
+  const pts = combo >= 3 ? 15 : 10;
+  score += pts;
+  updateHUD();
+  if (combo >= 3) showComboBadge();
+  showScorePopup(el, '+' + pts, combo >= 3 ? '#fbbf24' : '#4caf50');
+
+  activeTargets = activeTargets.filter(t => t !== el);
+  el.classList.add('dying');
+  setTimeout(() => el.remove(), 130);
+
+  if (activeTargets.length === 0) {
+    clearTimeout(targetTmout);
+    targetTmout = null;
+    setTimeout(spawnNext, 80);
+  }
+}
+
+// ===== COMBO BADGE =====
+function showComboBadge() {
+  clearTimeout(comboTmout);
+  const badge = document.getElementById('combo-badge');
+  badge.textContent = combo >= 5 ? '🔥🔥 Super-Combo! ×' + combo
+                    : combo >= 3 ? '🔥 Combo! ×' + combo
+                    : '';
+  badge.classList.add('visible');
+  comboTmout = setTimeout(hideComboBadge, 1200);
+}
+function hideComboBadge() {
+  document.getElementById('combo-badge').classList.remove('visible');
+}
+
+// ===== SCORE POPUP =====
+function showScorePopup(el, text, color) {
+  const rect = el.getBoundingClientRect();
+  const pop  = document.createElement('div');
+  pop.className   = 'score-popup';
+  pop.textContent = text;
+  pop.style.color = color;
+  pop.style.left  = (rect.left + rect.width  / 2 - 24) + 'px';
+  pop.style.top   = (rect.top  + rect.height / 2 - 10) + 'px';
+  document.body.appendChild(pop);
+  setTimeout(() => pop.remove(), 750);
+}
+
+// ===== MISS FLASH =====
+function flashMiss() {
+  const f = document.createElement('div');
+  f.className = 'miss-flash';
+  document.body.appendChild(f);
+  setTimeout(() => f.remove(), 380);
+}
+
+// ===== END GAME =====
+function endGame() {
+  gameActive = false;
+  clearInterval(timerIntvl);
+  clearTarget();
+  hideComboBadge();
+
+  const lbSection = document.getElementById('lb-section');
+  const endHint   = document.getElementById('end-hint');
+  const heading   = document.getElementById('end-heading');
+
+  if (practiceMode) {
+    heading.textContent  = 'Üben beendet! 🎯';
+    lbSection.classList.add('hidden');
+    endHint.textContent  = 'Gut geübt! Im Challenge-Modus kannst du dich mit anderen messen.';
+  } else {
+    heading.textContent  = 'Zeit abgelaufen! ⏱️';
+    lbSection.classList.remove('hidden');
+    endHint.textContent  = 'Vergleiche deinen Score mit deinen Mitschülern!';
+    saveScore(playerName, score);
+    renderLeaderboard();
+  }
+
+  setTimeout(() => {
+    document.getElementById('end-score').textContent = score;
+    document.getElementById('end-name').textContent  = playerName;
+    showScreen('screen-end');
+  }, 400);
+}
+
+// ===== LEADERBOARD =====
+function saveScore(name, pts) {
+  const list = loadScores();
+  list.push({ name, pts });
+  list.sort((a, b) => b.pts - a.pts);
+  try { localStorage.setItem(LB_KEY, JSON.stringify(list.slice(0, 10))); } catch {}
+}
+
+function loadScores() {
+  try { return JSON.parse(localStorage.getItem(LB_KEY)) || []; } catch { return []; }
+}
+
+function renderLeaderboard() {
+  const scores = loadScores();
+  const el = document.getElementById('lb-list');
+  if (!scores.length) {
+    el.innerHTML = '<div style="opacity:.55;font-size:.9rem">Noch keine Einträge.</div>';
+    return;
+  }
+  // Highlight the entry that matches current player+score (first match)
+  let highlighted = false;
+  el.innerHTML = scores.slice(0, 6).map((s, i) => {
+    const isMe = !highlighted && s.name === playerName && s.pts === score;
+    if (isMe) highlighted = true;
+    return `<div class="lb-entry ${isMe ? 'lb-me' : ''}">
+      <span class="lb-rank">${medals[i] || (i+1)+'.'}</span>
+      <span class="lb-name">${escHtml(s.name)}</span>
+      <span class="lb-pts">${s.pts}</span>
+    </div>`;
+  }).join('');
+}
+
+const medals = ['🥇','🥈','🥉'];
+
+function escHtml(s) {
+  return s.replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+// ===== RESET =====
+function resetToStart() {
+  showScreen('screen-start');
+  document.getElementById('hud-timer').classList.remove('urgent');
+}
+
+// ===== INIT =====
+// Enter key on name input
+document.getElementById('name-input').addEventListener('keydown', e => {
+  if (e.key === 'Enter') startGame();
+});
+
+// Prevent right-click context menu during game
+document.getElementById('screen-game').addEventListener('contextmenu', e => e.preventDefault());
+
+// ===== DRAG HANDLERS =====
+document.addEventListener('mousemove', (e) => {
+  if (!isDragging || !dragEl) return;
+  const desktop = document.getElementById('desktop');
+  const rect = desktop.getBoundingClientRect();
+  dragEl.style.left = (e.clientX - rect.left - dragOffsetX) + 'px';
+  dragEl.style.top  = (e.clientY - rect.top  - dragOffsetY) + 'px';
+});
+
+document.addEventListener('mouseup', (e) => {
+  if (!isDragging || !dragEl) return;
+  isDragging = false;
+  dragEl.style.zIndex = '';
+  const tb = dragEl.querySelector('.win-titlebar');
+  if (tb) tb.style.cursor = 'grab';
+
+  if (!dropZoneEl || !gameActive) { dragEl = null; return; }
+
+  // Hit if center of dragged window lands inside drop zone
+  const wr = dragEl.getBoundingClientRect();
+  const dr = dropZoneEl.getBoundingClientRect();
+  const cx = wr.left + wr.width  / 2;
+  const cy = wr.top  + wr.height / 2;
+  const hit = cx >= dr.left && cx <= dr.right && cy >= dr.top && cy <= dr.bottom;
+
+  const el = dragEl;
+  dragEl = null;
+  if (hit) {
+    dropZoneEl.remove();
+    dropZoneEl = null;
+    onHit(el);
+  }
+});
+
+// Inject shrinkBar keyframe
+const ks = document.createElement('style');
+ks.textContent = `@keyframes shrinkBar { from { transform:scaleX(1); } to { transform:scaleX(0); } }`;
+document.head.appendChild(ks);
+</script>
+</body>
+</html>
