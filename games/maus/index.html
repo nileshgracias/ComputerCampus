@@ -491,7 +491,7 @@ input[type="text"]:focus { border-color: rgba(255,255,255,0.6); background: rgba
         <span>Zweimal schnell auf den Ordner klicken</span>
       </div>
       <div class="task-row">
-        <span class="badge" style="background:#292524;color:white">Rechtsklick</span>
+        <span class="badge" style="background:#111111;color:#ffffff;border:2px solid #ffffff">Rechtsklick</span>
         <span>Mit der rechten Maustaste das Kontextmenü öffnen</span>
       </div>
       <div class="task-row">
@@ -609,7 +609,7 @@ const ccInstructions = {
  right:'Mit der rechten Maustaste auf den Ordner klicken. Dadurch öffnet sich ein Kontextmenü.',
  close:'Auf das X oben rechts im Fenster klicken.',
  drag:'Linke Maustaste gedrückt halten, Fenster bewegen und loslassen.',
- mixed:'Achte auf die Farbe der Ziele: Grün = Klick, Orange = Doppelklick, Türkis = Rechtsklick, Rot = Schließen.'
+ mixed:'Achte auf die Farbe der Ziele: Grün = Klick, Orange = Doppelklick, Schwarz = Rechtsklick, Rot = Schließen.'
 };
 function ccTaskFor(el){
  return el.dataset.ccTask || (el.classList.contains('drag-win')?'drag':currentTask);
@@ -726,7 +726,7 @@ const TASK_LABELS = {
 const TASK_COLORS = {
   single: '#4caf50',
   double: '#f59e0b',
-  right:  '#292524',
+  right:  '#111111',
   close:  '#ef5350',
   drag:   '#7c3aed',
   mixed:  '#ffffff',
@@ -735,8 +735,9 @@ const TASK_COLORS = {
 function setTaskBar(task) {
   const bar = document.getElementById('task-bar');
   bar.textContent = TASK_LABELS[task];
-  bar.style.color = TASK_COLORS[task];
-  bar.style.textShadow = `0 2px 10px ${TASK_COLORS[task]}99`;
+  bar.style.color = task === 'right' ? '#ffffff' : TASK_COLORS[task];
+  bar.style.background = task === 'right' ? '#111111' : '';
+  bar.style.textShadow = task === 'right' ? 'none' : `0 2px 10px ${TASK_COLORS[task]}99`;
 }
 
 // ===== SPAWN / REMOVE =====
@@ -866,7 +867,7 @@ function buildFolderTarget(task, dur) {
   el.className = 'target';
   el.dataset.ccTask = task;
   el.innerHTML = `
-    <div class="folder-wrap" style="border-color:${color}; background:rgba(0,0,0,0.18);">
+    <div class="folder-wrap" style="border-color:${color}; background:${task === 'right' ? '#111111' : 'rgba(0,0,0,0.18)'};">
       <div class="folder-icon"></div>
       <div class="folder-label">${name}</div>
     </div>
@@ -883,7 +884,7 @@ function buildFolderTarget(task, dur) {
       // Zeige ein einfaches Kontextmenü, statt den Browserdialog.
       const menu = document.createElement('div');
       menu.textContent = '📂 Öffnen   ·   ✏️ Umbenennen   ·   ℹ️ Eigenschaften';
-      menu.style.cssText = 'position:absolute;left:8px;top:78px;min-width:205px;padding:10px;background:white;color:#1e293b;border:2px solid #292524;border-radius:8px;box-shadow:0 5px 15px #0005;z-index:30;font-size:12px;';
+      menu.style.cssText = 'position:absolute;left:8px;top:78px;min-width:205px;padding:10px;background:white;color:#1e293b;border:2px solid #111111;border-radius:8px;box-shadow:0 5px 15px #0005;z-index:30;font-size:12px;';
       el.appendChild(menu);
       setTimeout(() => onHit(el), 550);
     });
