@@ -518,7 +518,7 @@ input[type="text"]:focus { border-color: rgba(255,255,255,0.6); background: rgba
 <div id="cc-help-visual" aria-hidden="true"><div class="cc-device"><div class="cc-active"></div></div></div>
 <p id="cc-help-count">Erfolge: 0 von 5</p>
 <button type="button" id="cc-help-toggle" onclick="ccToggleHelp()">Hilfe ausblenden</button>
-<p id="cc-help-penalty">Im Challenge-Modus gibt es mit sichtbarer Hilfe nur 50 % der Punkte.</p>
+
 </aside></div>
 </div>
 
@@ -603,7 +603,7 @@ function ccTaskFor(el){
  return el.dataset.ccTask || (el.classList.contains('drag-win')?'drag':currentTask);
 }
 function ccHelpVisible(task){
- return ccHelpManual === true || (ccHelpManual === null && practiceMode && (ccSuccess[task]||0)<5);
+ return practiceMode && (ccHelpManual === true || (ccHelpManual === null && (ccSuccess[task]||0)<5));
 }
 function ccRenderHelp(task){
  ccShownTask = task;
@@ -614,7 +614,6 @@ function ccRenderHelp(task){
  document.getElementById('cc-help-task').textContent = ccInstructions[task];
  document.getElementById('cc-help-count').textContent = 'Erfolge: '+(ccSuccess[task]||0)+' von 5';
  document.getElementById('cc-help-toggle').textContent = shown?'Hilfe ausblenden':'Hilfe anzeigen';
- document.getElementById('cc-help-penalty').style.display = practiceMode?'none':'block';
 }
 function ccToggleHelp(){
  const wasVisible=ccHelpVisible(ccShownTask);
@@ -631,6 +630,7 @@ function startGame() {
   playerName = document.getElementById('name-input').value.trim() || 'Anonym';
   score = 0; timeLeft = GAME_DURATION; combo = 0; gameActive = false;
   ccHelpManual = null;
+  document.getElementById('cc-help').style.display = practiceMode ? 'flex' : 'none';
   ccRenderHelp('single');
   document.getElementById('hud-name').textContent = playerName;
   document.getElementById('hud-timer').classList.remove('urgent');
@@ -945,8 +945,7 @@ function onHit(el) {
 
   combo++;
   const task = ccTaskFor(el);
-  const helpWasVisible = ccHelpVisible(task);
-  const pts = Math.round((combo >= 3 ? 15 : 10) * (!practiceMode && helpWasVisible ? 0.5 : 1));
+  const pts = combo >= 3 ? 15 : 10;
   if (ccSuccess[task] !== undefined) ccSuccess[task] = Math.min(5,ccSuccess[task]+1);
   ccRenderHelp(task);
   score += pts;
