@@ -505,13 +505,26 @@ input[type="text"]:focus { border-color: rgba(255,255,255,0.6); background: rgba
     </div>
     <input type="text" id="name-input" placeholder="Dein Name …" maxlength="20" autocomplete="off">
     <div class="mode-buttons">
-      <button class="btn-mode active" id="mode-challenge" onclick="selectMode('challenge')">⏱️ Challenge<small>10 Aufgaben · 8 richtig zum Bestehen</small></button>
+      <button class="btn-mode active" id="mode-challenge" onclick="selectMode('challenge')">⏱️ Challenge<small>5 × 20 Aufgaben · je 80 %</small></button>
       <button class="btn-mode" id="mode-practice" onclick="selectMode('practice')">🎯 Übungsmodus<small>Kein Zeitlimit</small></button>
     </div>
     <button class="btn-primary" onclick="startGame()">Los geht's! 🚀</button>
   </div>
 </div>
 
+<!-- ====== RULES SCREEN ====== -->
+<div class="screen hidden" id="screen-rules">
+ <div class="start-card">
+  <h1>🎯 Deine Challenge</h1>
+  <p>Du bearbeitest fünf Bereiche mit jeweils <strong>20 Aufgaben</strong>:</p>
+  <p>Einfachklick · Doppelklick · Rechtsklick · Fenster schließen · Drag &amp; Drop</p>
+  <p><strong>Bestehensregel:</strong> In jedem Bereich mindestens <strong>16 von 20 Aufgaben (80 %)</strong> richtig lösen. Nur dann wird das Tastaturtraining freigeschaltet.</p>
+  <p><strong>Zeit:</strong> Insgesamt 15 Minuten. Pro Aufgabe hast du maximal 8 Sekunden. Verpasste Aufgaben zählen als Fehler.</p>
+  <p>Deinen Fortschritt siehst du oben im Spielfeld. Die Bedienungshilfe ist in der Challenge ausgeschaltet.</p>
+  <button class="btn-primary" onclick="ccStartChallenge()">Verstanden – Countdown starten</button>
+  <p><button type="button" onclick="resetToStart()" style="margin-top:12px">Zurück zur Auswahl</button></p>
+ </div>
+</div>
 <!-- ====== GAME SCREEN ====== -->
 <div class="screen hidden" id="screen-game">
   <div id="hud">
@@ -520,7 +533,7 @@ input[type="text"]:focus { border-color: rgba(255,255,255,0.6); background: rgba
     <span id="hud-timer">60</span>
     <button id="stop-btn" class="hidden" onclick="endGame()">■ Beenden</button>
   </div>
-  <div id="task-bar"></div>
+  <div id="task-bar"></div><div id="cc-challenge-progress" style="padding:8px 16px;background:#111827;color:#fff;font-weight:800;text-align:center" hidden></div>
   <div id="game-workspace"><div id="desktop"></div>
 <aside id="cc-help" aria-label="Bedienungshilfe">
 <h2>💡 Bedienungshilfe</h2>
@@ -558,7 +571,7 @@ input[type="text"]:focus { border-color: rgba(255,255,255,0.6); background: rgba
 
 <script>
 // ===== CONFIG =====
-const GAME_DURATION = 60;
+const GAME_DURATION = 900; // 15 Minuten für 100 Aufgaben
 const LB_KEY = 'desktop_challenge_v1';
 
 const FOLDER_NAMES = [
@@ -576,7 +589,9 @@ const WINDOW_TITLES = [
 let practiceMode = false;
 let ccChallengeHits = 0;
 let ccChallengeAttempts = 0;
-const CC_CHALLENGE_TASKS = ['right','single','double','close','drag','single','right','double','close','drag'];
+const CC_CHALLENGE_TYPES = ['single','double','right','close','drag'];
+const CC_CHALLENGE_TASKS = CC_CHALLENGE_TYPES.flatMap(task => Array(20).fill(task));
+let ccHitsByType = Object.fromEntries(CC_CHALLENGE_TYPES.map(task => [task,0]));
 const CC_PROGRESS_KEY = 'computercampus-progress-v1';
 let score       = 0;
 let timeLeft    = GAME_DURATION;
@@ -648,6 +663,7 @@ function startGame() {
   playerName = document.getElementById('name-input').value.trim() || 'Anonym';
   score = 0; timeLeft = GAME_DURATION; combo = 0; gameActive = false;
   ccChallengeHits = 0; ccChallengeAttempts = 0;
+  ccHitsByType = Object.fromEntries(CC_CHALLENGE_TYPES.map(task => [task,0]));
   ccHelpManual = null;
   ccFirstTaskPending = true;
   document.getElementById('cc-help').style.display = practiceMode ? 'flex' : 'none';
@@ -655,11 +671,14 @@ function startGame() {
   document.getElementById('hud-name').textContent = playerName;
   document.getElementById('hud-timer').classList.remove('urgent');
   document.getElementById('stop-btn').classList.toggle('hidden', !practiceMode);
+  if (practiceMode) ccStartChallenge(); else showScreen('screen-rules');
+}
+
+function ccStartChallenge(){
   showScreen('screen-game');
   updateHUD();
   runCountdown(3);
 }
-
 function runCountdown(n) {
   const el = document.getElementById('countdown');
   el.classList.remove('hidden');
@@ -683,6 +702,7 @@ function runCountdown(n) {
 
 function beginGame() {
   gameActive = true;
+  if (!practiceMode) timerIntvl = setInterval(tickTimer, 1000);
   spawnNext();
 }
 
@@ -695,7 +715,17 @@ function tickTimer() {
 
 function updateHUD() {
   document.getElementById('hud-score').textContent = score;
-  document.getElementById('hud-timer').textContent = practiceMode ? '∞' : (ccChallengeAttempts + 1) + '/10';
+  document.getElementById('hud-timer').textContent = practiceMode ? '∞' : Math.floor(timeLeft/60) + ':' + String(timeLeft%60).padStart(2,'0');
+  const progress = document.getElementById('cc-challenge-progress');
+  if(progress){
+    progress.hidden = practiceMode;
+    if(!practiceMode){
+      const index = Math.min(ccChallengeAttempts,99);
+      const task = CC_CHALLENGE_TASKS[index];
+      const attempted = Math.min(ccChallengeAttempts%20,20);
+      progress.textContent = TASK_LABELS[task] + '  ·  ' + ccHitsByType[task] + ' von 20 erfolgreich  ·  Versuch ' + (attempted+1) + '/20  ·  Gesamt ' + ccChallengeAttempts + '/100';
+    }
+  }
 }
 
 // ===== TASK LOGIC =====
@@ -807,7 +837,7 @@ function spawnNext() {
   setTaskBar(currentTask);
   ccRenderHelp(currentTask);
 
-  const dur = practiceMode ? targetDuration(currentTask) : 12000;
+  const dur = practiceMode ? targetDuration(currentTask) : 8000;
 
   if (currentTask === 'drag') {
     const [pos] = spreadPositions(1, dw, dh, elW, elH);
@@ -860,7 +890,7 @@ function spawnNext() {
       }
       ccChallengeAttempts++;
       updateHUD();
-      if (ccChallengeAttempts >= 10) endGame();
+      if (ccChallengeAttempts >= 100) endGame();
       else setTimeout(spawnNext, 150);
     }, dur);
   }
@@ -984,8 +1014,8 @@ function onHit(el) {
   if (!gameActive || !activeTargets.includes(el)) return;
 
   combo++;
-  if (!practiceMode) { ccChallengeHits++; ccChallengeAttempts++; }
   const task = ccTaskFor(el);
+  if (!practiceMode) { ccChallengeHits++; ccChallengeAttempts++; ccHitsByType[task]++; }
   const pts = combo >= 3 ? 15 : 10;
   if (practiceMode && ccSuccess[task] !== undefined) ccSuccess[task] = Math.min(5,ccSuccess[task]+1);
   ccRenderHelp(task);
@@ -1001,7 +1031,7 @@ function onHit(el) {
   if (activeTargets.length === 0) {
     clearTimeout(targetTmout);
     targetTmout = null;
-    if (!practiceMode && ccChallengeAttempts >= 10) endGame();
+    if (!practiceMode && ccChallengeAttempts >= 100) endGame();
     else setTimeout(spawnNext, 80);
   }
 }
@@ -1057,11 +1087,14 @@ function endGame() {
     lbSection.classList.add('hidden');
     endHint.textContent  = 'Gut geübt! Im Challenge-Modus kannst du dich mit anderen messen.';
   } else {
-    const passed = ccChallengeHits >= 8;
+    const passed = CC_CHALLENGE_TYPES.every(task => ccHitsByType[task] >= 16);
     heading.textContent = passed ? 'Challenge bestanden! 🎉' : 'Weiter üben! 💪';
     lbSection.classList.add('hidden');
-    endHint.textContent = ccChallengeHits + ' von 10 Aufgaben geschafft. ' +
-      (passed ? 'Die Tastatur-Station ist jetzt freigeschaltet!' : 'Für die Freischaltung brauchst du mindestens 8 richtige Aufgaben.');
+    endHint.textContent = CC_CHALLENGE_TYPES.map(task =>
+      TASK_LABELS[task].replace(/[!]/g,'') + ': ' + ccHitsByType[task] + '/20'
+    ).join(' | ') + '. ' + (passed ?
+      'Alle fünf Bereiche bestanden! Die Tastatur-Station ist freigeschaltet.' :
+      'Du brauchst in JEDEM Bereich mindestens 16 von 20 Erfolgen.');
     if (passed) {
       try {
         const progress = JSON.parse(localStorage.getItem(CC_PROGRESS_KEY) || '{}');
