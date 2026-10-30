@@ -1,0 +1,685 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Tasten-Jagd – Tastaturtraining</title>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  overflow: hidden; user-select: none; height: 100vh;
+  background: #0f172a;
+}
+.screen { position: fixed; inset: 0; display: flex; align-items: center; justify-content: center; }
+.screen.hidden { display: none; }
+
+/* START */
+#screen-start {
+  background: linear-gradient(160deg, #14532d 0%, #166534 55%, #16a34a 100%);
+  flex-direction: column; color: white;
+}
+.start-card {
+  background: rgba(255,255,255,.1); border: 1px solid rgba(255,255,255,.2);
+  border-radius: 18px; padding: 2.2rem 2.6rem; text-align: center;
+  max-width: 480px; width: 92%;
+}
+.start-card h1 { font-size: 1.9rem; font-weight: 800; margin-bottom: .3rem; }
+.start-card .sub { font-size: .9rem; opacity: .75; margin-bottom: 1.4rem; }
+.level-grid { display: grid; grid-template-columns: repeat(2,1fr); gap: 10px; margin-bottom: 1.4rem; }
+.lv-btn {
+  padding: .7rem .4rem; border-radius: 10px;
+  border: 2px solid rgba(255,255,255,.25); background: rgba(255,255,255,.08);
+  color: white; cursor: pointer; font-size: .78rem; font-weight: 700;
+  font-family: inherit; transition: background .12s, border-color .12s; line-height: 1.35;
+}
+.lv-btn .lv-num { font-size: 1.3rem; display: block; margin-bottom: 3px; }
+.lv-btn:hover { background: rgba(255,255,255,.16); }
+.lv-btn.sel { background: rgba(245,158,11,.35); border-color: #f59e0b; }
+.mode-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 1.2rem; }
+.mode-btn {
+  padding: .55rem .5rem; border-radius: 10px;
+  border: 2px solid rgba(255,255,255,.25); background: rgba(255,255,255,.08);
+  color: white; cursor: pointer; font-size: .88rem; font-weight: 700;
+  font-family: inherit; transition: background .12s, border-color .12s;
+}
+.mode-btn:hover { background: rgba(255,255,255,.16); }
+.mode-btn.sel { background: rgba(245,158,11,.35); border-color: #f59e0b; }
+.btn-stop {
+  background: rgba(255,255,255,.12); color: white; border: 1px solid rgba(255,255,255,.25);
+  padding: .5rem 1.4rem; font-size: .9rem; font-weight: 700; border-radius: 8px;
+  cursor: pointer; font-family: inherit; transition: background .12s;
+}
+.btn-stop:hover { background: rgba(255,255,255,.22); }
+.hud-training { font-size: .8rem; font-weight: 700; color: #86efac; background: rgba(34,197,94,.2); padding: 3px 10px; border-radius: 20px; }
+.btn-home {
+  background: rgba(255,255,255,.1); color: rgba(255,255,255,.8);
+  border: 1px solid rgba(255,255,255,.2); border-radius: 7px;
+  padding: 4px 10px; font-size: .8rem; font-weight: 700;
+  cursor: pointer; font-family: inherit; flex-shrink: 0;
+  transition: background .12s;
+}
+.btn-home:hover { background: rgba(255,255,255,.2); }
+input[type="text"] {
+  width: 100%; padding: .7rem 1rem; border-radius: 9px;
+  border: 2px solid rgba(255,255,255,.25); background: rgba(255,255,255,.12);
+  color: white; font-size: 1rem; outline: none; margin-bottom: 1rem;
+  text-align: center; font-family: inherit;
+}
+input::placeholder { color: rgba(255,255,255,.45); }
+input:focus { border-color: rgba(255,255,255,.6); }
+.btn-primary {
+  background: #f59e0b; color: #1a1200; border: none; padding: .85rem 2rem;
+  font-size: 1.05rem; font-weight: 800; border-radius: 10px; cursor: pointer;
+  width: 100%; transition: background .12s, transform .08s; font-family: inherit;
+}
+.btn-primary:hover { background: #fbbf24; }
+.btn-primary:active { transform: scale(.97); }
+
+/* GAME */
+#screen-game {
+  background: linear-gradient(180deg, #052e16 0%, #14532d 40%, #166534 100%);
+  flex-direction: column; align-items: stretch; justify-content: flex-start; color: white;
+}
+#hud {
+  background: rgba(0,0,0,.45); padding: .5rem 1.2rem;
+  display: flex; align-items: center; gap: 14px;
+  color: white; font-size: .9rem; flex-shrink: 0; z-index: 10;
+}
+.hud-name { font-weight: 700; max-width: 150px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.hud-pill { background: rgba(255,255,255,.15); padding: 3px 13px; border-radius: 20px; font-weight: 800; }
+.hud-lv { font-size: .78rem; opacity: .7; }
+#hud-timer { margin-left: auto; font-size: 1.5rem; font-weight: 800; min-width: 40px; text-align: right; transition: color .3s; }
+#hud-timer.urgent { color: #ff5252; }
+
+#challenge-area {
+  flex: 1; display: flex; flex-direction: column;
+  align-items: center; justify-content: center; gap: 14px; padding: 12px;
+}
+.chal-card {
+  background: rgba(255,255,255,.1); border: 2px solid rgba(255,255,255,.2);
+  border-radius: 20px; padding: 1.8rem 3rem; text-align: center; min-width: 260px;
+  position: relative;
+}
+.chal-card.anim-ok   { animation: cardOk  .22s ease; }
+.chal-card.anim-err  { animation: cardErr .3s ease; }
+@keyframes cardOk  { 50% { transform: scale(1.05); background: rgba(74,222,128,.25); border-color: #4ade80; } }
+@keyframes cardErr {
+  20% { transform: translateX(-9px); background: rgba(248,113,113,.25); border-color: #f87171; }
+  40% { transform: translateX( 9px); }
+  60% { transform: translateX(-6px); }
+  80% { transform: translateX( 6px); }
+}
+.chal-char {
+  font-size: 4.5rem; font-weight: 900; line-height: 1; color: white;
+  text-shadow: 0 4px 20px rgba(0,0,0,.4); margin-bottom: .4rem;
+  min-height: 1.1em; display: flex; align-items: center; justify-content: center;
+}
+.chal-hint { font-size: .9rem; opacity: .65; font-weight: 600; min-height: 1.2em; }
+
+.bar-wrap { width: 260px; height: 5px; background: rgba(255,255,255,.15); border-radius: 3px; overflow: hidden; }
+#chal-bar { height: 100%; background: #f59e0b; border-radius: 3px; transform-origin: left; }
+
+/* KEYBOARD */
+#kb-wrap {
+  flex-shrink: 0; padding: 10px 8px 14px;
+  background: rgba(0,0,0,.4); display: flex; justify-content: center;
+}
+#kb { display: flex; flex-direction: column; gap: 3px; }
+.kb-row { display: flex; gap: 3px; }
+.kb-key {
+  background: rgba(255,255,255,.12); border: 1px solid rgba(255,255,255,.18);
+  border-bottom: 3px solid rgba(0,0,0,.3); border-radius: 5px;
+  color: rgba(255,255,255,.75); font-size: 9px; font-weight: 600;
+  height: 34px; display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 1px; padding: 0 3px; text-align: center;
+  transition: background .1s, box-shadow .1s, transform .08s;
+  flex-shrink: 0; line-height: 1.2; white-space: nowrap;
+}
+.kb-sec { font-size: 7px; opacity: 0.55; line-height: 1; }
+.kb-key.hl-main {
+  background: #22c55e; border-color: #16a34a; border-bottom-color: #14532d;
+  color: white; box-shadow: 0 0 14px #22c55e99; transform: translateY(1px);
+}
+.kb-key.hl-mod {
+  background: #f59e0b; border-color: #d97706; border-bottom-color: #92400e;
+  color: #1a1200; box-shadow: 0 0 10px #f59e0b77;
+}
+.kb-key.hl-press {
+  background: rgba(255,255,255,.45); transform: translateY(2px); border-bottom-width: 1px;
+}
+
+/* COUNTDOWN */
+#countdown {
+  position: fixed; inset: 0; background: rgba(0,0,0,.55);
+  display: flex; align-items: center; justify-content: center;
+  z-index: 200; color: white; font-size: 9rem; font-weight: 900;
+  text-shadow: 0 4px 30px rgba(0,0,0,.5); animation: cntPulse .5s ease-out;
+}
+#countdown.hidden { display: none; }
+@keyframes cntPulse { from { transform: scale(1.4); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+
+/* SCORE POPUP */
+.sc-pop {
+  position: fixed; font-size: 1.5rem; font-weight: 900; pointer-events: none;
+  z-index: 300; animation: floatUp .7s ease-out forwards;
+  text-shadow: 0 2px 6px rgba(0,0,0,.5);
+}
+@keyframes floatUp {
+  0%   { transform: translateY(0) scale(1); opacity: 1; }
+  100% { transform: translateY(-60px) scale(1.1); opacity: 0; }
+}
+
+/* MISS FLASH */
+.miss-flash {
+  position: fixed; inset: 0; background: rgba(229,57,53,.22);
+  pointer-events: none; z-index: 150; animation: flashFade .35s ease-out forwards;
+}
+@keyframes flashFade { to { opacity: 0; } }
+
+/* COMBO */
+#combo-badge {
+  position: fixed; top: 68px; right: 16px;
+  background: #f59e0b; color: #1a1200;
+  font-size: .85rem; font-weight: 800; padding: 4px 12px;
+  border-radius: 20px; z-index: 100; opacity: 0; transition: opacity .2s; pointer-events: none;
+}
+#combo-badge.vis { opacity: 1; }
+
+/* END */
+#screen-end {
+  background: linear-gradient(160deg, #052e16 0%, #14532d 100%);
+  flex-direction: column; color: white;
+}
+.end-card {
+  background: rgba(255,255,255,.1); border: 1px solid rgba(255,255,255,.2);
+  border-radius: 18px; padding: 2rem 2.5rem; text-align: center;
+  max-width: 520px; width: 92%;
+}
+.end-card h2 { font-size: 1.5rem; font-weight: 700; margin-bottom: .5rem; }
+.final-score { font-size: 4.5rem; font-weight: 900; color: #fbbf24; line-height: 1; }
+.score-sub { font-size: .85rem; opacity: .65; margin: .3rem 0 1.3rem; }
+.leaderboard {
+  background: rgba(0,0,0,.25); border-radius: 12px;
+  padding: .9rem 1.1rem; margin-bottom: 1.3rem; text-align: left;
+}
+.lb-head { font-size: .78rem; opacity: .6; text-transform: uppercase; letter-spacing: .06em; margin-bottom: .6rem; font-weight: 700; }
+.lb-entry { display: flex; align-items: center; gap: 10px; padding: 5px 0; font-size: .93rem; border-bottom: 1px solid rgba(255,255,255,.08); }
+.lb-entry:last-child { border-bottom: none; }
+.lb-rank { width: 22px; font-weight: 700; opacity: .5; font-size: .85rem; text-align: center; }
+.lb-name { flex: 1; font-weight: 600; }
+.lb-pts  { font-weight: 800; color: #fbbf24; }
+.lb-me   { color: #fbbf24; }
+.lb-me .lb-rank { opacity: 1; }
+</style>
+</head>
+<body>
+
+<!-- START -->
+<div class="screen" id="screen-start">
+  <div class="start-card">
+    <h1>⌨️ Tasten-Jagd</h1>
+    <p class="sub">Tastaturtraining · 60 Sekunden · Klasse 5</p>
+    <div class="level-grid">
+      <button class="lv-btn sel" data-lv="1" onclick="selectLevel(1)">
+        <span class="lv-num">1</span>Buchstaben, Zahlen<br>& Steuertasten
+      </button>
+      <button class="lv-btn" data-lv="2" onclick="selectLevel(2)">
+        <span class="lv-num">2</span>Sonderzeichen<br>& Shift / AltGr
+      </button>
+    </div>
+    <div class="mode-row">
+      <button class="mode-btn sel" data-mode="0" onclick="selectMode(0)">🏆 Wertung</button>
+      <button class="mode-btn" data-mode="1" onclick="selectMode(1)">📖 Training (kein Limit)</button>
+    </div>
+    <input type="text" id="name-input" placeholder="Dein Name …" maxlength="20" autocomplete="off">
+    <button class="btn-primary" onclick="startGame()">Los geht's! 🚀</button>
+  </div>
+</div>
+
+<!-- GAME -->
+<div class="screen hidden" id="screen-game">
+  <div id="hud">
+    <button class="btn-home" onclick="goHome()">← Startseite</button>
+    <span class="hud-name" id="hud-name">Spieler</span>
+    <div class="hud-pill">Punkte: <span id="hud-score">0</span></div>
+    <span class="hud-lv" id="hud-lv"></span>
+    <span id="hud-training" class="hud-training" style="display:none">Training</span>
+    <span id="hud-timer">120</span>
+  </div>
+  <div id="challenge-area">
+    <div class="chal-card" id="chal-card">
+      <div class="chal-char" id="chal-char"></div>
+      <div class="chal-hint" id="chal-hint"></div>
+    </div>
+    <div class="bar-wrap" id="bar-wrap"><div id="chal-bar"></div></div>
+    <button id="stop-btn" class="btn-stop" style="display:none" onclick="stopTraining()">⏹ Beenden</button>
+  </div>
+  <div id="kb-wrap"><div id="kb"></div></div>
+</div>
+
+<div id="combo-badge"></div>
+<div id="countdown" class="hidden"></div>
+
+<!-- END -->
+<div class="screen hidden" id="screen-end">
+  <div class="end-card">
+    <h2>Zeit abgelaufen! ⏱️</h2>
+    <div class="final-score" id="end-score">0</div>
+    <div class="score-sub">Punkte · <span id="end-name"></span> · Stufe <span id="end-lv"></span></div>
+    <div class="leaderboard">
+      <div class="lb-head">🏆 Bestenliste (dieser PC)</div>
+      <div id="lb-list"></div>
+    </div>
+    <p style="font-size:.85rem;opacity:.65;margin-bottom:1.2rem;">Vergleiche deinen Score mit deinen Mitschülern!</p>
+    <button class="btn-primary" onclick="resetToStart()">Nochmal spielen</button>
+  </div>
+</div>
+
+<script>
+// ── KEYBOARD LAYOUT (German QWERTZ) ──────────────────────────────────────────
+// Each key: [id, label, width-px]
+// Row widths calculated to all equal ~460px (keys + 3px gaps)
+// [id, primary-label, width-px, shift-label?]
+const KB_ROWS = [
+  [ // Number row
+    ['esc','Esc',38],['caret','^',28,'°'],['d1','1',28,'!'],['d2','2',28,'"'],
+    ['d3','3',28,'§'],['d4','4',28,'$'],['d5','5',28,'%'],['d6','6',28,'&'],
+    ['d7','7',28,'/'],['d8','8',28,'('],['d9','9',28,')'],
+    ['d0','0',28,'='],['ss','ß',28,'?'],['bksp','⌫',88],
+  ],
+  [ // QWERTZ row
+    ['tab','Tab',44],['q','Q',28],['w','W',28],['e','E',28],['r','R',28],
+    ['t','T',28],['z','Z',28],['u','U',28],['i','I',28],['o','O',28],
+    ['p','P',28],['ue','Ü',28],['plus','+',28,'*'],['enter','Enter',44],
+  ],
+  [ // Home row
+    ['caps','Caps',58],['a','A',28],['s','S',28],['d','D',28],['f','F',28],
+    ['g','G',28],['h','H',28],['j','J',28],['k','K',28],['l','L',28],
+    ['oe','Ö',28],['ae','Ä',28],['hash','#',58,"'"],
+  ],
+  [ // Shift row
+    ['lshift','Shift',72],['lt','<',28,'>'],['y','Y',28],['x','X',28],
+    ['c','C',28],['v','V',28],['b','B',28],['n','N',28],['m','M',28],
+    ['comma',',',28,';'],['dot','.',28,':'],['minus','-',28,'_'],['rshift','Shift',44],
+  ],
+  [ // Bottom row
+    ['lctrl','Strg',44],['lalt','Alt',44],['space','Leertaste',272],
+    ['altgr','AltGr',44],['rctrl','Strg',44],
+  ],
+];
+
+// Maps e.code → key ID (for visual key-press feedback)
+const CODE_TO_ID = {
+  'Backquote':'caret','Digit1':'d1','Digit2':'d2','Digit3':'d3','Digit4':'d4',
+  'Digit5':'d5','Digit6':'d6','Digit7':'d7','Digit8':'d8','Digit9':'d9',
+  'Digit0':'d0','Minus':'ss','Backspace':'bksp',
+  'Escape':'esc','Tab':'tab','KeyQ':'q','KeyW':'w','KeyE':'e','KeyR':'r','KeyT':'t',
+  'KeyY':'z','KeyU':'u','KeyI':'i','KeyO':'o','KeyP':'p',
+  'BracketLeft':'ue','BracketRight':'plus','Enter':'enter',
+  'CapsLock':'caps','KeyA':'a','KeyS':'s','KeyD':'d','KeyF':'f','KeyG':'g',
+  'KeyH':'h','KeyJ':'j','KeyK':'k','KeyL':'l','Semicolon':'oe','Quote':'ae',
+  'Backslash':'hash',
+  'ShiftLeft':'lshift','IntlBackslash':'lt','KeyZ':'y','KeyX':'x',
+  'KeyC':'c','KeyV':'v','KeyB':'b','KeyN':'n','KeyM':'m',
+  'Comma':'comma','Period':'dot','Slash':'minus','ShiftRight':'rshift',
+  'ControlLeft':'lctrl','AltLeft':'lalt','Space':'space',
+  'AltRight':'altgr','ControlRight':'rctrl',
+};
+
+// ── CHALLENGES ────────────────────────────────────────────────────────────────
+const SETS = {
+  1: [
+    { ch:'Enter',     key:'Enter',     hint:'Enter-Taste (rechts)',     main:['enter'],  mods:[] },
+    { ch:'⌫',        key:'Backspace', hint:'Rückschritt-Taste',         main:['bksp'],   mods:[] },
+    { ch:'Leertaste', key:' ',         hint:'Lange Taste unten',         main:['space'],  mods:[] },
+    { ch:'Caps Lock', key:'CapsLock',  hint:'Groß/Klein-Sperre (links)', main:['caps'],   mods:[] },
+    { ch:'Tab',      key:'Tab',       hint:'Tabulator (links)',          main:['tab'],    mods:[] },
+    { ch:'Esc',      key:'Escape',    hint:'Escape-Taste (oben links)',  main:['esc'],    mods:[] },
+    ...('abcdefghijklmnopqrstuvwxyz').split('').map(c => ({
+      ch:c, key:c, hint:'', main:[c], mods:[],
+    })),
+    ...('0123456789').split('').map(c => ({
+      ch:c, key:c, hint:'', main:['d'+c], mods:[],
+    })),
+  ],
+  2: [
+    { ch:'@',  key:'@',  hint:'AltGr + Q',    main:['q'],     mods:['altgr']          },
+    { ch:'€',  key:'€',  hint:'AltGr + E',    main:['e'],     mods:['altgr']          },
+    { ch:'!',  key:'!',  hint:'Shift + 1',    main:['d1'],    mods:['lshift','rshift'] },
+    { ch:'?',  key:'?',  hint:'Shift + ß',    main:['ss'],    mods:['lshift','rshift'] },
+    { ch:'§',  key:'§',  hint:'Shift + 3',    main:['d3'],    mods:['lshift','rshift'] },
+    { ch:'/',  key:'/',  hint:'Shift + 7',    main:['d7'],    mods:['lshift','rshift'] },
+    { ch:'(',  key:'(',  hint:'Shift + 8',    main:['d8'],    mods:['lshift','rshift'] },
+    { ch:')',  key:')',  hint:'Shift + 9',    main:['d9'],    mods:['lshift','rshift'] },
+    { ch:'=',  key:'=',  hint:'Shift + 0',    main:['d0'],    mods:['lshift','rshift'] },
+    { ch:':',  key:':',  hint:'Shift + .',    main:['dot'],   mods:['lshift','rshift'] },
+    { ch:'"',  key:'"',  hint:'Shift + 2',    main:['d2'],    mods:['lshift','rshift'] },
+    { ch:'_',  key:'_',  hint:'Shift + -',    main:['minus'], mods:['lshift','rshift'] },
+    { ch:'&',  key:'&',  hint:'Shift + 6',    main:['d6'],    mods:['lshift','rshift'] },
+    { ch:'{',  key:'{',  hint:'AltGr + 7',    main:['d7'],    mods:['altgr']           },
+    { ch:'[',  key:'[',  hint:'AltGr + 8',    main:['d8'],    mods:['altgr']           },
+    { ch:']',  key:']',  hint:'AltGr + 9',    main:['d9'],    mods:['altgr']           },
+    { ch:'}',  key:'}',  hint:'AltGr + 0',    main:['d0'],    mods:['altgr']           },
+    { ch:'*',  key:'*',  hint:"Shift + +",    main:['plus'],  mods:['lshift','rshift'] },
+    { ch:"'",  key:"'",  hint:"Shift + #",    main:['hash'],  mods:['lshift','rshift'] },
+  ],
+};
+
+// ── STATE ─────────────────────────────────────────────────────────────────────
+const GAME_DURATION  = 60;
+const CHAL_DURATION  = { 1: 5000, 2: 10000 };
+const LB_KEY         = 'tastenjagd_v1';
+
+let score, timeLeft, gameActive, playerName, selectedLevel, trainingMode;
+let timerIntvl, chalTimeout, comboTmout;
+let combo, currentChal, locked;
+
+// ── INIT ──────────────────────────────────────────────────────────────────────
+function buildKeyboard() {
+  const kb = document.getElementById('kb');
+  KB_ROWS.forEach(row => {
+    const rowEl = document.createElement('div');
+    rowEl.className = 'kb-row';
+    row.forEach(([id, label, w, sec]) => {
+      const k = document.createElement('div');
+      k.className = 'kb-key';
+      k.id = 'k-' + id;
+      k.style.width = w + 'px';
+      k.style.minWidth = w + 'px';
+      if (sec) {
+        const secEl = document.createElement('span');
+        secEl.className = 'kb-sec';
+        secEl.textContent = sec;
+        const mainEl = document.createElement('span');
+        mainEl.textContent = label;
+        k.appendChild(secEl);
+        k.appendChild(mainEl);
+      } else {
+        k.textContent = label;
+      }
+      rowEl.appendChild(k);
+    });
+    kb.appendChild(rowEl);
+  });
+}
+buildKeyboard();
+
+function selectLevel(n) {
+  selectedLevel = n;
+  document.querySelectorAll('.lv-btn').forEach(b => b.classList.toggle('sel', +b.dataset.lv === n));
+}
+selectLevel(1);
+
+function selectMode(n) {
+  trainingMode = n === 1;
+  document.querySelectorAll('.mode-btn').forEach(b => b.classList.toggle('sel', +b.dataset.mode === n));
+}
+selectMode(0);
+
+// ── GAME FLOW ─────────────────────────────────────────────────────────────────
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.add('hidden'));
+  document.getElementById(id).classList.remove('hidden');
+}
+
+function startGame() {
+  playerName = document.getElementById('name-input').value.trim() || 'Anonym';
+  score = 0; timeLeft = GAME_DURATION; combo = 0; gameActive = false; chalPool = [];
+  document.getElementById('hud-name').textContent  = playerName;
+  document.getElementById('hud-lv').textContent    = 'Stufe ' + selectedLevel;
+  document.getElementById('hud-timer').classList.remove('urgent');
+  document.getElementById('hud-timer').style.display    = trainingMode ? 'none'  : '';
+  document.getElementById('hud-training').style.display = trainingMode ? ''      : 'none';
+  document.getElementById('hud-score').parentElement.style.display = trainingMode ? 'none' : '';
+  document.getElementById('stop-btn').style.display  = trainingMode ? '' : 'none';
+  document.getElementById('bar-wrap').style.display  = trainingMode ? 'none' : '';
+  showScreen('screen-game');
+  updateHUD();
+  runCountdown(3);
+}
+
+function runCountdown(n) {
+  const el = document.getElementById('countdown');
+  el.classList.remove('hidden');
+  el.style.animation = 'none'; void el.offsetWidth;
+  el.style.animation = 'cntPulse .5s ease-out';
+  el.textContent = n > 0 ? n : 'Los!';
+  if (n > 0) setTimeout(() => runCountdown(n - 1), 850);
+  else setTimeout(() => { el.classList.add('hidden'); beginGame(); }, 650);
+}
+
+function beginGame() {
+  gameActive = true;
+  if (!trainingMode) timerIntvl = setInterval(tickTimer, 1000);
+  nextChallenge();
+}
+
+function tickTimer() {
+  timeLeft = Math.max(0, timeLeft - 1);
+  updateHUD();
+  if (timeLeft <= 10) document.getElementById('hud-timer').classList.add('urgent');
+  if (timeLeft === 0) endGame();
+}
+
+function updateHUD() {
+  document.getElementById('hud-score').textContent = score;
+  document.getElementById('hud-timer').textContent = timeLeft;
+}
+
+// ── CHALLENGES ────────────────────────────────────────────────────────────────
+let chalPool = [];
+
+function nextChallenge() {
+  clearTimeout(chalTimeout);
+  if (!gameActive) return;
+  if (chalPool.length === 0) {
+    chalPool = [...SETS[selectedLevel]].sort(() => Math.random() - .5);
+  }
+  currentChal = chalPool.pop();
+  locked = false;
+  showChallenge(currentChal);
+  if (!trainingMode) {
+    chalTimeout = setTimeout(() => {
+      if (!gameActive) return;
+      score = Math.max(0, score - 5);
+      combo = 0; hideComboBadge(); updateHUD(); flashMiss();
+      nextChallenge();
+    }, CHAL_DURATION[selectedLevel]);
+  }
+}
+
+function showChallenge(c) {
+  document.getElementById('chal-char').textContent = c.ch.length === 1 ? c.ch.toUpperCase() : c.ch;
+  document.getElementById('chal-hint').textContent = c.hint;
+  clearHighlights();
+  highlightKeys(c.main, c.mods);
+  if (!trainingMode) restartBar();
+}
+
+function highlightKeys(main, mods) {
+  // Nur die erste (linke) Shift-/Mod-Taste hervorheben
+  const modId = mods[0];
+  if (modId) {
+    const modEl = document.getElementById('k-' + modId);
+    if (modEl) modEl.classList.add('hl-mod');
+  }
+  main.forEach(id => {
+    const el = document.getElementById('k-' + id);
+    if (el) el.classList.add('hl-main');
+  });
+}
+
+function clearHighlights() {
+  document.querySelectorAll('.kb-key').forEach(k => {
+    k.classList.remove('hl-main', 'hl-mod', 'hl-press');
+  });
+}
+
+function restartBar() {
+  const bar = document.getElementById('chal-bar');
+  bar.style.animation = 'none'; void bar.offsetWidth;
+  bar.style.animation = `shrinkBar ${CHAL_DURATION[selectedLevel]}ms linear forwards`;
+}
+
+// ── KEY HANDLER ───────────────────────────────────────────────────────────────
+document.addEventListener('keydown', (e) => {
+  if (!gameActive) return;
+  e.preventDefault();
+  if (locked || e.repeat) return;  // gesperrt nach Treffer / Taste gedrückt gehalten
+
+  // Visual key press feedback
+  const pressId = CODE_TO_ID[e.code];
+  if (pressId) {
+    const el = document.getElementById('k-' + pressId);
+    if (el) {
+      el.classList.add('hl-press');
+      setTimeout(() => el.classList.remove('hl-press'), 120);
+    }
+  }
+
+  // Check answer
+  let correct = false;
+  const codeId = CODE_TO_ID[e.code];
+  if (currentChal.mods.length === 0) {
+    // Stufe 1: match by physical key position, ignoring modifier state
+    correct = codeId !== undefined && currentChal.main.includes(codeId);
+  } else {
+    // Stufe 2: match by produced character (modifier implicitly required)
+    correct = e.key === currentChal.key;
+  }
+
+  if (correct) {
+    locked = true;
+    clearTimeout(chalTimeout);
+    if (!trainingMode) {
+      combo++;
+      const pts = combo >= 3 ? 15 : 10;
+      score += pts;
+      updateHUD();
+      if (combo >= 3) showComboBadge();
+      showScorePopup('+' + pts, combo >= 3 ? '#fbbf24' : '#4ade80');
+    } else {
+      showScorePopup('✓', '#4ade80');
+    }
+    animCard('ok');
+    setTimeout(nextChallenge, 180);
+  } else {
+    // Ignore modifier keys themselves as wrong answers
+    if (['Shift','Control','Alt','AltGraph','CapsLock','Tab','OS','Meta'].includes(e.key)) return;
+    combo = 0; hideComboBadge();
+    if (!trainingMode) {
+      score = Math.max(0, score - 5);
+      updateHUD();
+      showScorePopup('-5', '#f87171');
+    }
+    animCard('err');
+  }
+});
+
+function animCard(type) {
+  const card = document.getElementById('chal-card');
+  card.classList.remove('anim-ok', 'anim-err');
+  void card.offsetWidth;
+  card.classList.add(type === 'ok' ? 'anim-ok' : 'anim-err');
+}
+
+// ── FEEDBACK ──────────────────────────────────────────────────────────────────
+function showScorePopup(text, color) {
+  const card = document.getElementById('chal-card');
+  const r = card.getBoundingClientRect();
+  const pop = document.createElement('div');
+  pop.className = 'sc-pop';
+  pop.textContent = text;
+  pop.style.color = color;
+  pop.style.left = (r.left + r.width / 2 - 20) + 'px';
+  pop.style.top  = (r.top  + r.height / 2 - 10) + 'px';
+  document.body.appendChild(pop);
+  setTimeout(() => pop.remove(), 720);
+}
+
+function flashMiss() {
+  const f = document.createElement('div');
+  f.className = 'miss-flash';
+  document.body.appendChild(f);
+  setTimeout(() => f.remove(), 380);
+}
+
+function showComboBadge() {
+  clearTimeout(comboTmout);
+  const b = document.getElementById('combo-badge');
+  b.textContent = combo >= 5 ? '🔥🔥 Super-Combo! ×' + combo : '🔥 Combo! ×' + combo;
+  b.classList.add('vis');
+  comboTmout = setTimeout(hideComboBadge, 1200);
+}
+function hideComboBadge() { document.getElementById('combo-badge').classList.remove('vis'); }
+
+// ── END ───────────────────────────────────────────────────────────────────────
+function endGame() {
+  gameActive = false;
+  clearInterval(timerIntvl);
+  clearTimeout(chalTimeout);
+  clearHighlights();
+  hideComboBadge();
+  if (trainingMode) { showScreen('screen-start'); return; }
+  saveScore(playerName, score, selectedLevel);
+  setTimeout(() => {
+    document.getElementById('end-score').textContent = score;
+    document.getElementById('end-name').textContent  = playerName;
+    document.getElementById('end-lv').textContent    = selectedLevel;
+    renderLeaderboard();
+    showScreen('screen-end');
+  }, 400);
+}
+
+function stopTraining() { endGame(); }
+function goHome() { endGame(); }
+
+// ── LEADERBOARD ───────────────────────────────────────────────────────────────
+function saveScore(name, pts, lv) {
+  const list = loadScores();
+  list.push({ name, pts, lv });
+  list.sort((a, b) => b.pts - a.pts);
+  try { localStorage.setItem(LB_KEY, JSON.stringify(list.slice(0, 10))); } catch {}
+}
+function loadScores() {
+  try { return JSON.parse(localStorage.getItem(LB_KEY)) || []; } catch { return []; }
+}
+const MEDALS = ['🥇','🥈','🥉'];
+function escH(s) {
+  return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+function renderLeaderboard() {
+  const scores = loadScores();
+  const el = document.getElementById('lb-list');
+  if (!scores.length) { el.innerHTML = '<div style="opacity:.55;font-size:.9rem">Noch keine Einträge.</div>'; return; }
+  let found = false;
+  el.innerHTML = scores.slice(0, 6).map((s, i) => {
+    const isMe = !found && s.name === playerName && s.pts === score;
+    if (isMe) found = true;
+    return `<div class="lb-entry ${isMe ? 'lb-me' : ''}">
+      <span class="lb-rank">${MEDALS[i] || (i+1)+'.'}</span>
+      <span class="lb-name">${escH(s.name)}</span>
+      <span style="font-size:.78rem;opacity:.5;margin-right:4px">Stufe ${s.lv}</span>
+      <span class="lb-pts">${s.pts}</span>
+    </div>`;
+  }).join('');
+}
+
+function resetToStart() {
+  showScreen('screen-start');
+  document.getElementById('hud-timer').classList.remove('urgent');
+}
+
+// ── MISC ──────────────────────────────────────────────────────────────────────
+document.getElementById('name-input').addEventListener('keydown', e => {
+  if (e.key === 'Enter') startGame();
+});
+document.getElementById('screen-game').addEventListener('contextmenu', e => e.preventDefault());
+
+const ks = document.createElement('style');
+ks.textContent = `@keyframes shrinkBar { from { transform:scaleX(1); } to { transform:scaleX(0); } }`;
+document.head.appendChild(ks);
+</script>
+</body>
+</html>
