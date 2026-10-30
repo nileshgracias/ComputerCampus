@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="description" content="ComputerCampus – Lernspiele für Informatik und digitale Kompetenzen">
+  <title>ComputerCampus – Entdecken. Verstehen. Anwenden.</title>
+  <link rel="stylesheet" href="css/style.css">
+  <script src="js/app.js" defer></script>
+</head>
+<body>
+  <header class="hero">
+    <p class="eyebrow">Dein digitaler Lerncampus</p>
+    <h1>ComputerCampus<span class="dot">.</span></h1>
+    <p class="tagline">Entdecken. Verstehen. Anwenden.</p>
+    <p>Lerne spielerisch, wie Computer und Informatik funktionieren.</p>
+  </header>
+  <main>
+    <section aria-labelledby="worlds-title">
+      <h2 id="worlds-title">Deine Lernwelten</h2>
+      <p class="intro">Starte mit Maus und Tastatur. Weitere Welten werden nach und nach entwickelt.</p>
+      <div class="worlds">
+        <article class="world active"><span class="symbol" aria-hidden="true">🖱️</span><span class="number">Lernwelt 1</span><h3>Maus & Tastatur</h3><p>Trainiere Maus, Touchpad und Tastatur.</p><button id="open-training">Training starten</button></article>
+        <article class="world locked"><span class="symbol" aria-hidden="true">🔁</span><span class="number">Lernwelt 2</span><h3>EVA-Prinzip</h3><p>Eingabe, Verarbeitung und Ausgabe verstehen.</p><span class="status">In Vorbereitung</span></article>
+        <article class="world locked"><span class="symbol" aria-hidden="true">🧩</span><span class="number">Lernwelt 3</span><h3>Computerwerkstatt</h3><p>Bauteile entdecken und einen PC zusammenbauen.</p><span class="status">In Vorbereitung</span></article>
+        <article class="world locked"><span class="symbol" aria-hidden="true">🌐</span><span class="number">Lernwelt 4</span><h3>Netzwerklabor</h3><p>Netzwerke verbinden und testen.</p><span class="status">In Vorbereitung</span></article>
+        <article class="world locked"><span class="symbol" aria-hidden="true">🔐</span><span class="number">Lernwelt 5</span><h3>Kryptografie</h3><p>Nachrichten verschlüsseln und entschlüsseln.</p><span class="status">In Vorbereitung</span></article>
+        <article class="world locked"><span class="symbol" aria-hidden="true">🚀</span><span class="number">Lernwelt 6</span><h3>Campus-Mission</h3><p>Setze deine neuen Fähigkeiten gemeinsam ein.</p><span class="status">In Vorbereitung</span></article>
+      </div>
+    </section>
+    <section id="training" class="training" hidden aria-labelledby="training-title">
+      <h2 id="training-title">Welche Eingabegeräte hast du?</h2>
+      <p>Wähle die Ausstattung an deinem Arbeitsplatz. Du kannst sie jederzeit ändern.</p>
+      <fieldset><legend>Mein Computer hat …</legend>
+        <label><input type="radio" name="device" value="mouse"> eine Computermaus</label>
+        <label><input type="radio" name="device" value="touchpad"> ein Touchpad (ohne Maus)</label>
+        <label><input type="radio" name="device" value="both"> Maus und Touchpad</label>
+      </fieldset>
+      <button id="save-device">Trainingsplan anzeigen</button>
+      <div id="plan" class="plan" role="status" aria-live="polite"></div>
+    </section>
+  </main>
+  <footer>ComputerCampus · Ein Lernprojekt in Entwicklung · Keine Schülerkonten in dieser Version</footer>
+</body>
+</html>
