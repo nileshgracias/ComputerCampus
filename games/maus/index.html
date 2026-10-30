@@ -462,6 +462,7 @@ input[type="text"]:focus { border-color: rgba(255,255,255,0.6); background: rgba
 .cc-device.double .cc-active{animation-duration:.7s}
 .cc-device.drag{animation:cc-drag 2s infinite}
 .cc-device.close .cc-active{background:#f87171}
+.cc-device.right .cc-active{left:36px;background:#22d3ee;animation:cc-click 1.6s infinite}
 @keyframes cc-click{0%,45%,100%{background:#93c5fd}18%{background:#1d4ed8}}
 @keyframes cc-drag{0%,100%{transform:translateX(-24px)}50%{transform:translateX(25px)}}
 #cc-help-count{font-weight:700}
@@ -483,6 +484,10 @@ input[type="text"]:focus { border-color: rgba(255,255,255,0.6); background: rgba
       <div class="task-row">
         <span class="badge b-blue">Doppelklick</span>
         <span>Zweimal schnell auf den Ordner klicken</span>
+      </div>
+      <div class="task-row">
+        <span class="badge" style="background:#0891b2;color:white">Rechtsklick</span>
+        <span>Mit der rechten Maustaste das Kontextmenü öffnen</span>
       </div>
       <div class="task-row">
         <span class="badge b-red">Fenster schließen</span>
@@ -589,15 +594,16 @@ function showScreen(id) {
 }
 
 // ===== GAME FLOW =====
-const ccSuccess = {single:0,double:0,close:0,drag:0};
+const ccSuccess = {single:0,double:0,right:0,close:0,drag:0};
 let ccHelpManual = null;
 let ccShownTask = 'single';
 const ccInstructions = {
  single:'Einmal mit der linken Maustaste klicken.',
  double:'Zweimal schnell mit der linken Maustaste klicken.',
+ right:'Mit der rechten Maustaste auf den Ordner klicken. Dadurch öffnet sich ein Kontextmenü.',
  close:'Auf das X oben rechts im Fenster klicken.',
  drag:'Linke Maustaste gedrückt halten, Fenster bewegen und loslassen.',
- mixed:'Achte auf die Farbe der Ziele: Grün = Klick, Orange = Doppelklick, Rot = Schließen.'
+ mixed:'Achte auf die Farbe der Ziele: Grün = Klick, Orange = Doppelklick, Türkis = Rechtsklick, Rot = Schließen.'
 };
 function ccTaskFor(el){
  return el.dataset.ccTask || (el.classList.contains('drag-win')?'drag':currentTask);
@@ -682,16 +688,18 @@ function updateHUD() {
 // ===== TASK LOGIC =====
 function pickTask() {
   const r = Math.random();
-  if (r < 0.25) return 'single';
-  if (r < 0.50) return 'double';
-  if (r < 0.75) return 'close';
+  if (r < 0.20) return 'single';
+  if (r < 0.40) return 'double';
+  if (r < 0.60) return 'right';
+  if (r < 0.80) return 'close';
   return 'drag';
 }
 
 function pickNonDragTask() {
   const r = Math.random();
-  if (r < 0.333) return 'single';
-  if (r < 0.667) return 'double';
+  if (r < 0.25) return 'single';
+  if (r < 0.50) return 'double';
+  if (r < 0.75) return 'right';
   return 'close';
 }
 
@@ -702,6 +710,7 @@ function targetDuration(task) {
 const TASK_LABELS = {
   single: '👆 Einmal klicken!',
   double: '✌️ Doppelklick!',
+  right:  '🖱️ Rechtsklick auf den Ordner!',
   close:  '✕ Fenster schließen!',
   drag:   '🖱️ Fenster verschieben!',
   mixed:  '👀 Achte auf die Farbe!',
@@ -709,6 +718,7 @@ const TASK_LABELS = {
 const TASK_COLORS = {
   single: '#4caf50',
   double: '#f59e0b',
+  right:  '#0891b2',
   close:  '#ef5350',
   drag:   '#7c3aed',
   mixed:  '#ffffff',
@@ -857,6 +867,18 @@ function buildFolderTarget(task, dur) {
 
   if (task === 'single') {
     el.addEventListener('click', (e) => { e.stopPropagation(); onHit(el); });
+  } else if (task === 'right') {
+    el.addEventListener('contextmenu', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      // Zeige ein einfaches Kontextmenü, statt den Browserdialog.
+      const menu = document.createElement('div');
+      menu.textContent = '📂 Öffnen   ·   ✏️ Umbenennen   ·   ℹ️ Eigenschaften';
+      menu.style.cssText = 'position:absolute;left:8px;top:78px;min-width:205px;padding:10px;background:white;color:#1e293b;border:2px solid #0891b2;border-radius:8px;box-shadow:0 5px 15px #0005;z-index:30;font-size:12px;';
+      el.appendChild(menu);
+      setTimeout(() => onHit(el), 550);
+    });
+    el.addEventListener('click', (e) => e.stopPropagation());
   } else {
     el.addEventListener('dblclick', (e) => { e.stopPropagation(); onHit(el); });
     el.addEventListener('click',    (e) => {
@@ -946,7 +968,7 @@ function onHit(el) {
   combo++;
   const task = ccTaskFor(el);
   const pts = combo >= 3 ? 15 : 10;
-  if (ccSuccess[task] !== undefined) ccSuccess[task] = Math.min(5,ccSuccess[task]+1);
+  if (practiceMode && ccSuccess[task] !== undefined) ccSuccess[task] = Math.min(5,ccSuccess[task]+1);
   ccRenderHelp(task);
   score += pts;
   updateHUD();
