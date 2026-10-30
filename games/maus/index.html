@@ -600,10 +600,22 @@ let ccChallengeAttempts = 0;
 const CC_CHALLENGE_TYPES = ['single','double','right','close','drag'];
 let CC_CHALLENGE_TASKS = [];
 function ccCreateBalancedTasks() {
-  const tasks = CC_CHALLENGE_TYPES.flatMap(task => Array(20).fill(task));
-  for (let i = tasks.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [tasks[i], tasks[j]] = [tasks[j], tasks[i]];
+  // 20 zufällige Runden mit jeweils allen fünf unterschiedlichen Bedienhandlungen.
+  // Dadurch wechselt der Aufgabentyp garantiert nach jedem Versuch.
+  const tasks = [];
+  let previous = null;
+  for (let round = 0; round < 20; round++) {
+    const group = [...CC_CHALLENGE_TYPES];
+    for (let i = group.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [group[i], group[j]] = [group[j], group[i]];
+    }
+    if (group[0] === previous) {
+      const j = 1 + Math.floor(Math.random() * (group.length - 1));
+      [group[0], group[j]] = [group[j], group[0]];
+    }
+    tasks.push(...group);
+    previous = group[group.length - 1];
   }
   return tasks;
 }
