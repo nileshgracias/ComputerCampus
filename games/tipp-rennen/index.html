@@ -1,0 +1,686 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Tipp-Rennen – Sonderzeichen-Kurs</title>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  overflow: hidden; user-select: none; height: 100vh;
+}
+.screen { position: fixed; inset: 0; display: flex; align-items: center; justify-content: center; }
+.screen.hidden { display: none; }
+
+/* START */
+#screen-start {
+  background: linear-gradient(160deg, #3b0764 0%, #6d28d9 55%, #8b5cf6 100%);
+  flex-direction: column; color: white;
+}
+.start-card {
+  background: rgba(255,255,255,.1); border: 1px solid rgba(255,255,255,.2);
+  border-radius: 18px; padding: 2.2rem 2.6rem; text-align: center;
+  max-width: 500px; width: 92%;
+}
+.start-card h1 { font-size: 1.9rem; font-weight: 800; margin-bottom: .3rem; }
+.start-card .sub { font-size: .9rem; opacity: .75; margin-bottom: 1.4rem; }
+.instructions {
+  background: rgba(0,0,0,.25); border-radius: 12px;
+  padding: .9rem 1.1rem; margin-bottom: 1.4rem; text-align: left;
+  display: flex; flex-direction: column; gap: 8px;
+}
+.instr-row { display: flex; align-items: center; gap: 10px; font-size: .88rem; }
+.badge {
+  padding: 3px 10px; border-radius: 20px; font-size: .78rem;
+  font-weight: 700; white-space: nowrap; flex-shrink: 0;
+}
+.b-v { background: #16a34a; }
+.b-r { background: #dc2626; }
+.b-y { background: #d97706; }
+input[type="text"] {
+  width: 100%; padding: .7rem 1rem; border-radius: 9px;
+  border: 2px solid rgba(255,255,255,.25); background: rgba(255,255,255,.12);
+  color: white; font-size: 1rem; outline: none; margin-bottom: 1rem;
+  text-align: center; font-family: inherit;
+}
+input::placeholder { color: rgba(255,255,255,.45); }
+input:focus { border-color: rgba(255,255,255,.6); }
+.btn-primary {
+  background: #f59e0b; color: #1a1200; border: none; padding: .85rem 2rem;
+  font-size: 1.05rem; font-weight: 800; border-radius: 10px; cursor: pointer;
+  width: 100%; transition: background .12s, transform .08s; font-family: inherit;
+}
+.btn-primary:hover { background: #fbbf24; }
+.btn-primary:active { transform: scale(.97); }
+.btn-secondary {
+  background: rgba(255,255,255,.12); color: white;
+  border: 2px solid rgba(255,255,255,.3); padding: .7rem 2rem;
+  font-size: .98rem; font-weight: 700; border-radius: 10px; cursor: pointer;
+  width: 100%; margin-top: .7rem; transition: background .12s, transform .08s;
+  font-family: inherit;
+}
+.btn-secondary:hover { background: rgba(255,255,255,.22); }
+.btn-secondary:active { transform: scale(.97); }
+
+/* GAME */
+#screen-game {
+  background: linear-gradient(180deg, #1e0538 0%, #3b0764 40%, #4c1d95 100%);
+  flex-direction: column; align-items: stretch; justify-content: flex-start; color: white;
+}
+#hud {
+  background: rgba(0,0,0,.45); padding: .5rem 1.2rem;
+  display: flex; align-items: center; gap: 14px;
+  color: white; font-size: .9rem; flex-shrink: 0;
+}
+.btn-home {
+  background: rgba(255,255,255,.1); color: rgba(255,255,255,.8);
+  border: 1px solid rgba(255,255,255,.2); border-radius: 7px;
+  padding: 4px 10px; font-size: .8rem; font-weight: 700;
+  cursor: pointer; font-family: inherit; flex-shrink: 0;
+  transition: background .12s;
+}
+.btn-home:hover { background: rgba(255,255,255,.2); }
+.hud-name { font-weight: 700; max-width: 140px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.hud-pill { background: rgba(255,255,255,.15); padding: 3px 13px; border-radius: 20px; font-weight: 800; }
+#hud-timer { margin-left: auto; font-size: 1.4rem; font-weight: 800; font-variant-numeric: tabular-nums; }
+#hud-timer.low { color: #f87171; animation: blink 1s step-end infinite; }
+
+#race-area {
+  flex: 1; display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  padding: 20px 24px; gap: 20px;
+}
+
+/* Sentence display */
+.race-card {
+  background: rgba(255,255,255,.09); border: 2px solid rgba(255,255,255,.18);
+  border-radius: 16px; padding: 1.6rem 2rem; max-width: 680px; width: 100%;
+}
+.sentence-label {
+  font-size: .75rem; opacity: .5; font-weight: 700; text-transform: uppercase;
+  letter-spacing: .08em; margin-bottom: .8rem;
+}
+#sentence-display {
+  font-size: 1.5rem; font-weight: 600; line-height: 1.6;
+  font-family: 'Courier New', Courier, monospace; letter-spacing: .03em;
+  word-break: break-all; min-height: 2.5em;
+}
+.ch { transition: color .08s, background .08s; }
+.ch.correct  { color: #4ade80; }
+.ch.wrong    { color: rgba(255,255,255,.5); text-decoration: underline wavy #f87171; text-underline-offset: 4px; }
+.ch.cursor   { border-bottom: 3px solid #f59e0b; background: rgba(245,158,11,.28); border-radius: 3px; }
+.ch.pending  { color: rgba(255,255,255,.45); }
+
+/* Echo line: what the player actually typed */
+.typed-label {
+  font-size: .75rem; opacity: .5; font-weight: 700; text-transform: uppercase;
+  letter-spacing: .08em; margin: 1.1rem 0 .5rem;
+}
+#typed-display {
+  font-size: 1.5rem; font-weight: 600; line-height: 1.6;
+  font-family: 'Courier New', Courier, monospace; letter-spacing: .03em;
+  word-break: break-all; min-height: 1.6em;
+}
+.tch { border-radius: 3px; }
+.tch.correct { color: #4ade80; }
+.tch.wrong   { color: #fff; background: rgba(248,113,113,.85); }
+.tch.caret   { border-left: 2px solid #f59e0b; margin-left: -1px; animation: blink 1s step-end infinite; }
+.typed-empty { color: rgba(255,255,255,.35); font-size: 1rem; font-style: italic; }
+@keyframes blink { 50% { border-color: transparent; } }
+
+/* Typing input (hidden, but receives focus) */
+#type-input {
+  position: fixed; left: -9999px; top: 0;
+  opacity: 0; pointer-events: none;
+  width: 1px; height: 1px;
+}
+
+/* Split hint */
+.split-hint {
+  display: flex; align-items: center; justify-content: center; flex-wrap: wrap;
+  gap: 8px 10px; font-size: .85rem; opacity: .6; margin-top: .5rem;
+}
+.hint-key {
+  background: rgba(255,255,255,.15); border: 1px solid rgba(255,255,255,.25);
+  border-bottom: 2px solid rgba(0,0,0,.3); border-radius: 5px;
+  padding: 2px 8px; font-size: .8rem; font-weight: 700;
+}
+
+/* Lap result */
+#lap-result {
+  background: rgba(0,0,0,.3); border-radius: 12px;
+  padding: .7rem 1.4rem; text-align: center; font-size: .95rem; opacity: 0;
+  transition: opacity .3s;
+}
+#lap-result.vis { opacity: 1; }
+
+/* Countdown overlay */
+#countdown {
+  position: fixed; inset: 0; background: rgba(0,0,0,.6);
+  display: flex; align-items: center; justify-content: center;
+  z-index: 200; color: white; font-size: 9rem; font-weight: 900;
+  text-shadow: 0 4px 30px rgba(0,0,0,.5); animation: cntPulse .5s ease-out;
+}
+#countdown.hidden { display: none; }
+@keyframes cntPulse { from { transform: scale(1.4); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+
+/* END */
+#screen-end {
+  background: linear-gradient(160deg, #1e0538 0%, #3b0764 100%);
+  flex-direction: column; color: white;
+}
+.end-card {
+  background: rgba(255,255,255,.1); border: 1px solid rgba(255,255,255,.2);
+  border-radius: 18px; padding: 2rem 2.5rem; text-align: center;
+  max-width: 540px; width: 92%;
+}
+.end-card h2 { font-size: 1.5rem; font-weight: 700; margin-bottom: .5rem; }
+.total-time { font-size: 4rem; font-weight: 900; color: #fbbf24; line-height: 1; }
+.score-sub  { font-size: .85rem; opacity: .65; margin: .3rem 0 .5rem; }
+.lap-grid {
+  display: grid; grid-template-columns: repeat(3,1fr); gap: 10px;
+  margin-bottom: 1.3rem;
+}
+.lap-box {
+  background: rgba(0,0,0,.25); border-radius: 10px; padding: .7rem .5rem;
+}
+.lap-box .lap-n   { font-size: .75rem; opacity: .55; margin-bottom: 4px; }
+.lap-box .lap-t   { font-size: 1.4rem; font-weight: 800; color: #c4b5fd; }
+.lap-box .lap-acc { font-size: .75rem; color: #4ade80; margin-top: 3px; }
+.leaderboard {
+  background: rgba(0,0,0,.25); border-radius: 12px;
+  padding: .9rem 1.1rem; margin-bottom: 1.3rem; text-align: left;
+}
+.lb-head { font-size: .78rem; opacity: .6; text-transform: uppercase; letter-spacing: .06em; margin-bottom: .6rem; font-weight: 700; }
+.lb-entry { display: flex; align-items: center; gap: 10px; padding: 5px 0; font-size: .93rem; border-bottom: 1px solid rgba(255,255,255,.08); }
+.lb-entry:last-child { border-bottom: none; }
+.lb-rank { width: 22px; font-weight: 700; opacity: .5; font-size: .85rem; text-align: center; }
+.lb-name { flex: 1; font-weight: 600; }
+.lb-pts  { font-weight: 800; color: #fbbf24; }
+.lb-me   { color: #fbbf24; }
+.lb-me .lb-rank { opacity: 1; }
+</style>
+</head>
+<body>
+
+<!-- START -->
+<div class="screen" id="screen-start">
+  <div class="start-card">
+    <h1>🏎️ Tipp-Rennen</h1>
+    <p class="sub">Sonderzeichen-Kurs · 2 Minuten · Klasse 5</p>
+    <div class="instructions">
+      <div class="instr-row">
+        <span class="badge b-v">Grün</span>
+        <span>Richtig getippt – weiter zum nächsten Satz!</span>
+      </div>
+      <div class="instr-row">
+        <span class="badge b-r">Rot</span>
+        <span>Falscher Buchstabe – Backspace und nochmal</span>
+      </div>
+      <div class="instr-row">
+        <span class="badge b-y">Ziel</span>
+        <span>In 2 Minuten so viele Sätze wie möglich tippen!</span>
+      </div>
+    </div>
+    <input type="text" id="name-input" placeholder="Dein Name …" maxlength="20" autocomplete="off">
+    <button class="btn-primary" onclick="startGame(false)">Rennen starten! 🏁</button>
+    <button class="btn-secondary" onclick="startGame(true)">🐢 Übungsmodus – ohne Zeit</button>
+  </div>
+</div>
+
+<!-- GAME -->
+<div class="screen hidden" id="screen-game">
+  <div id="hud">
+    <button class="btn-home" onclick="goHome()">← Startseite</button>
+    <span class="hud-name" id="hud-name">Spieler</span>
+    <div class="hud-pill">✓ <span id="hud-count">0</span> Sätze</div>
+    <span id="hud-timer">2:00</span>
+  </div>
+  <div id="race-area">
+    <div class="race-card">
+      <div class="sentence-label">Tippe diesen Satz ab:</div>
+      <div id="sentence-display"></div>
+      <div class="typed-label">Deine Eingabe:</div>
+      <div id="typed-display"></div>
+    </div>
+    <div class="split-hint" id="split-hint" style="visibility:hidden">
+      <span class="hint-key">AltGr</span>+<span class="hint-key">Q</span> = @
+      &nbsp;|&nbsp;
+      <span class="hint-key">AltGr</span>+<span class="hint-key">E</span> = €
+      &nbsp;|&nbsp;
+      <span class="hint-key">Shift</span>+<span class="hint-key">1</span> = !
+      &nbsp;|&nbsp;
+      <span class="hint-key">Shift</span>+<span class="hint-key">ß</span> = ?
+      &nbsp;|&nbsp;
+      <span class="hint-key">Shift</span>+<span class="hint-key">3</span> = §
+      &nbsp;|&nbsp;
+      <span class="hint-key">Shift</span>+<span class="hint-key">^</span> = °
+      &nbsp;|&nbsp;
+      <span class="hint-key">Shift</span>+<span class="hint-key">6</span> = &amp;
+    </div>
+    <div id="lap-result"></div>
+  </div>
+  <!-- Hidden input to capture keystrokes -->
+  <input type="text" id="type-input" autocomplete="off" autocorrect="off"
+         autocapitalize="off" spellcheck="false">
+</div>
+
+<div id="countdown" class="hidden"></div>
+
+<!-- END -->
+<div class="screen hidden" id="screen-end">
+  <div class="end-card">
+    <h2>🏁 Zeit abgelaufen!</h2>
+    <div class="total-time" id="end-total">0</div>
+    <div class="score-sub">Sätze in 2 Minuten · <span id="end-name"></span></div>
+    <div class="lap-grid" id="lap-grid"></div>
+    <div class="leaderboard">
+      <div class="lb-head">🏆 Bestenliste (dieser PC) – meiste Sätze gewinnt</div>
+      <div id="lb-list"></div>
+    </div>
+    <p style="font-size:.85rem;opacity:.65;margin-bottom:1.2rem">Vergleiche dich mit deinen Mitschülern!</p>
+    <button class="btn-primary" onclick="resetToStart()">Nochmal spielen</button>
+  </div>
+</div>
+
+<script>
+// ── SENTENCES ─────────────────────────────────────────────────────────────────
+// 100 Sätze mit vielen Sonderzeichen. Werden zufällig gemischt.
+// Alle Zeichen sind auf der deutschen Tastatur (QWERTZ) tippbar.
+const SENTENCES = [
+  'Meine E-Mail: max.muster@klasse5.de',
+  'Schreibe an: lehrer@schule-nrw.de bitte!',
+  'Passwort: 8 Zeichen, Zahlen & Symbole!',
+  'Der USB-Stick kostet 12,99 € im Shop.',
+  'Klicke auf "Datei" und dann "Speichern".',
+  'Suche im Web: "Wie weit ist der Mond?"',
+  'Speichere als: Steckbrief_Max-Mueller.txt',
+  'Lade die Datei bild_01.jpg jetzt hoch!',
+  'Drücke Strg + S zum Speichern, ok?',
+  'Mein Profil heißt @maxi_2025 (privat!).',
+  'WLAN-Name: SchuleKlasse5_Gast steht da.',
+  'Tippe www.schule-nrw.de in die Leiste.',
+  'Die Datei heißt: hausaufgabe_mathe.pdf',
+  'Akku bei 15 % - bitte jetzt aufladen!',
+  'Update fertig: 100 % geschafft, super!',
+  'Das Eis kostet 1,50 € - lecker!',
+  'Im Angebot: 3 Hefte für nur 2,49 €.',
+  'Sie zahlte 19,99 € bequem mit Karte.',
+  'Rabatt: 25 % auf alle bunten Stifte!',
+  'Der Film läuft heute um 20:15 Uhr.',
+  'Pizza für 7,90 € + Getränk gratis!',
+  'Spare 5 € beim Einkauf ab 30 €.',
+  'Das Ticket kostet 4,80 € pro Person.',
+  'Summe: 12 € + 8 € = 20 € genau.',
+  'Wechselgeld: 50 € - 33 € = 17 €.',
+  'Rechne: (5 + 3) * 2 = 16 schnell aus.',
+  '10 / 2 = 5 und 9 - 4 = 5, klar?',
+  '7 * 8 = 56 - das weiß ich genau!',
+  '100 - 37 = 63, stimmt das wirklich?',
+  'Die Hälfte von 50 % ist genau 25 %.',
+  '3 + 4 = 7 und 7 + 4 = 11, weiter!',
+  'Wie viel ist 6 * 6 + 4 = ? Rechne!',
+  'Teile 24 / 3 = 8 ganz gleichmäßig auf.',
+  'Im Quadrat sind 4 * 4 = 16 Felder.',
+  '1 + 2 + 3 + 4 = 10, super gerechnet!',
+  'In § 5 steht: Sei immer freundlich!',
+  'Regel 1: Pünktlich um 8:00 Uhr da sein.',
+  'Tags: #Schule #Klasse5 @Frau_Meyer cool!',
+  'Hausaufgabe: Seite 42, Nr. 3 - 7 machen.',
+  'Pause von 9:30 bis 9:45 Uhr, juhu!',
+  'Mein Plan: Mathe, Deutsch & Sport heute.',
+  'Note 1 = sehr gut; Note 6 = ungenügend.',
+  'Frage: Was sind 50 % von 80 € denn?',
+  'Achtung § 3: Handys bleiben jetzt aus!',
+  'Das Projekt "Mein Tier" startet montags.',
+  'Ruf mich bitte an: (0203) 45-678 ?',
+  'Notruf 112 - nur im echten Notfall!',
+  'Schreib mir: hallo@freunde.de noch heute!',
+  'Adresse: Hauptstr. 7, 47051 Duisburg.',
+  'Termin am 12.06. um 14:30 Uhr, ok?',
+  'Smiley :-) macht echt gute Laune!',
+  'Ich mag dich <3 - du bist wirklich toll!',
+  'Cool! So ein Wetter & dann auch Ferien?',
+  'Pssst ... das ist ein großes Geheimnis!',
+  'Yes! Wir haben heute 3:1 gewonnen!',
+  'Frage & Antwort: Warum ist das so?',
+  'Wow, 100 Punkte - ein neuer Rekord!',
+  'Tor! Es steht jetzt 2:2, voll spannend!',
+  'Hä? Das verstehe ich nicht so ganz ...',
+  'Halt, stopp! Nicht so schnell, bitte!',
+  'Der Hund wiegt 12,5 kg - ganz schön viel!',
+  'Im Zoo leben 5 Löwen & 3 müde Tiger.',
+  'Dieser Baum ist über 100 Jahre alt.',
+  'Wasser kocht bei 100 °C, weißt du das?',
+  'Eine Biene besucht 50 Blüten pro Tag!',
+  'Der Fluss ist 3 km lang & sehr tief.',
+  'Die Schnecke kriecht 1 cm pro Minute.',
+  'Im Beet wachsen 8 Tomaten & 4 Gurken.',
+  'Der Vogel fliegt bis zu 30 km/h schnell.',
+  'Frösche quaken laut: quak, quak, quak!',
+  'Rezept: 250 g Mehl + 2 Eier verrühren.',
+  'Pizza mit Käse & Tomaten - einfach mhh!',
+  'Trink jeden Tag 1,5 Liter Wasser!',
+  '3 Äpfel + 2 Bananen = 5 Stück Obst.',
+  'Backe die Kekse bei 180 °C, fertig!',
+  'Der Saft kostet nur 0,99 € - günstig!',
+  'Ein Laib Brot wiegt genau 500 g.',
+  'Schoki & Chips? Lieber Obst essen!',
+  'Die Suppe ist heiß - 70 °C, Vorsicht!',
+  'Frühstück um 7:30 Uhr - guten Appetit!',
+  'E-Mail: a.b@c.de & x.y@z.de senden.',
+  'Code: #4F-7? Bitte genau abtippen!',
+  'Liste: 1) Apfel 2) Birne 3) Kirsche.',
+  'Preis * Menge = Gesamt, also 12 € * 3.',
+  'Die Datei "Foto.png" ist 2,4 MB groß.',
+  'Achtung: 50 % + 50 % = 100 % genau!',
+  'Klick "OK" oder "Abbrechen" - du wählst!',
+  'Suchwort: @Sterne #Nacht "leuchtet" ein.',
+  'Formel: (a + b) * c = das Ergebnis.',
+  'Konto: +50 € heute, -20 € morgen.',
+  'Frage 7: Was bedeutet & in dem Text?',
+  'Das Symbol € steht immer für Euro, klar!',
+  'Das Symbol @ nutzt man bei E-Mails.',
+  'Das Zeichen § heißt auch Paragraf.',
+  'Setze ein ! ans Ende: Das ist ja toll!',
+  'Mit ? fragst du: Wie geht es dir denn?',
+  'Klammern: (auf) und (zu) gehören dazu.',
+  'Ein Sternchen * markiert wichtige Wörter.',
+  'Bindestrich: E-Mail, USB-Stick, T-Shirt.',
+  'Geschafft! Du tippst jetzt wie ein Profi!',
+];
+
+function shuffle(arr) {
+  for (let i = arr.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+  return arr;
+}
+
+// ── STATE ─────────────────────────────────────────────────────────────────────
+const LB_KEY = 'tipprennen_v2';   // v2: Punktzahl = Anzahl Sätze (mehr ist besser)
+const GAME_SECONDS = 120;         // 2 Minuten Gesamtzeit
+let playerName, gameActive, practiceMode;
+let queue, currentSentence, cursorPos, typed;
+let sentencesDone, charsTyped, errors;
+let deadline, timerRAF;
+
+// ── GAME FLOW ─────────────────────────────────────────────────────────────────
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.add('hidden'));
+  document.getElementById(id).classList.remove('hidden');
+}
+
+function startGame(practice = false) {
+  practiceMode = practice;
+  playerName = document.getElementById('name-input').value.trim() || 'Anonym';
+  gameActive = false;
+  document.getElementById('hud-name').textContent = playerName;
+  showScreen('screen-game');
+  runCountdown(3);
+}
+
+function runCountdown(n) {
+  const el = document.getElementById('countdown');
+  el.classList.remove('hidden');
+  el.style.animation = 'none'; void el.offsetWidth;
+  el.style.animation = 'cntPulse .5s ease-out';
+  el.textContent = n > 0 ? n : 'Los!';
+  if (n > 0) setTimeout(() => runCountdown(n - 1), 850);
+  else setTimeout(() => { el.classList.add('hidden'); beginRace(); }, 650);
+}
+
+function beginRace() {
+  gameActive    = true;
+  sentencesDone = 0;
+  charsTyped    = 0;
+  errors        = 0;
+  queue         = shuffle(SENTENCES.slice());   // alle 100 zufällig mischen
+  document.getElementById('hud-count').textContent = '0';
+  document.getElementById('split-hint').style.visibility = 'visible';
+  nextSentence();
+  cancelAnimationFrame(timerRAF);
+  const timerEl = document.getElementById('hud-timer');
+  if (practiceMode) {
+    // Übungsmodus: kein Countdown, kein automatisches Ende.
+    timerEl.textContent = '🐢 Übung';
+    timerEl.classList.remove('low');
+  } else {
+    deadline = performance.now() + GAME_SECONDS * 1000;
+    timerRAF = requestAnimationFrame(tickDisplay);
+  }
+}
+
+// Nächsten zufälligen Satz laden; ist die Liste leer, neu mischen.
+function nextSentence() {
+  if (queue.length === 0) queue = shuffle(SENTENCES.slice());
+  currentSentence = queue.pop();
+  cursorPos = 0;
+  typed = '';
+  renderSentence();
+  const inp = document.getElementById('type-input');
+  inp.value = '';
+  inp.focus();
+}
+
+function tickDisplay() {
+  if (!gameActive) return;
+  const remaining = Math.max(0, deadline - performance.now());
+  const sec = Math.ceil(remaining / 1000);
+  const timerEl = document.getElementById('hud-timer');
+  timerEl.textContent = Math.floor(sec / 60) + ':' + String(sec % 60).padStart(2, '0');
+  timerEl.classList.toggle('low', sec <= 20);
+  if (remaining <= 0) { endGame(); return; }
+  timerRAF = requestAnimationFrame(tickDisplay);
+}
+
+// ── RENDERING ─────────────────────────────────────────────────────────────────
+function renderSentence() {
+  const sentence = currentSentence;
+  const display  = document.getElementById('sentence-display');
+  display.innerHTML = '';
+  for (let i = 0; i < sentence.length; i++) {
+    const span = document.createElement('span');
+    span.className = 'ch';
+    const ch = sentence[i] === ' ' ? ' ' : sentence[i];
+    span.textContent = ch;
+    if (i < cursorPos) {
+      // Typed – compare
+      span.classList.add(typed[i] === sentence[i] ? 'correct' : 'wrong');
+    } else if (i === cursorPos) {
+      span.classList.add('cursor', 'pending');
+    } else {
+      span.classList.add('pending');
+    }
+    display.appendChild(span);
+  }
+  renderTyped();
+}
+
+// Echo line: show exactly what the player typed so far, mistakes in red
+function renderTyped() {
+  const sentence = currentSentence;
+  const el = document.getElementById('typed-display');
+  el.innerHTML = '';
+  if (typed.length === 0) {
+    el.innerHTML = '<span class="typed-empty">(noch nichts getippt)</span>';
+    return;
+  }
+  for (let i = 0; i < typed.length; i++) {
+    const span = document.createElement('span');
+    span.className = 'tch';
+    const correct = typed[i] === sentence[i];
+    span.classList.add(correct ? 'correct' : 'wrong');
+    // Show the actual typed character; make wrong spaces visible as a box
+    span.textContent = (typed[i] === ' ' && !correct) ? '␣' : typed[i];
+    el.appendChild(span);
+  }
+  const caret = document.createElement('span');
+  caret.className = 'tch caret';
+  caret.textContent = ' ';
+  el.appendChild(caret);
+}
+
+// ── INPUT HANDLING ────────────────────────────────────────────────────────────
+document.getElementById('type-input').addEventListener('keydown', (e) => {
+  if (!gameActive) return;
+  const sentence = currentSentence;
+
+  if (e.key === 'Backspace') {
+    e.preventDefault();
+    if (cursorPos > 0) {
+      cursorPos--;
+      typed = typed.slice(0, -1);
+      renderSentence();
+    }
+    return;
+  }
+  // Ignore modifier-only keys
+  if (e.key.length > 1 && !['Enter'].includes(e.key)) return;
+  e.preventDefault();
+
+  // Accept Enter as newline if sentence contains \n (not used here), else ignore
+  if (e.key === 'Enter') return;
+
+  const expected = sentence[cursorPos];
+  const actual   = e.key;
+  typed += actual;
+  charsTyped++;
+  if (actual !== expected) errors++;
+  cursorPos++;
+  renderSentence();
+
+  if (cursorPos >= sentence.length) {
+    // Check full correctness
+    if (typed === sentence) {
+      sentenceComplete();
+    } else {
+      // Sentence complete but has errors: go back to first error and say so,
+      // damit der Schüler merkt, dass etwas nicht stimmt (kein stilles Löschen).
+      const firstErr = [...typed].findIndex((c, i) => c !== sentence[i]);
+      cursorPos = firstErr;
+      typed = typed.slice(0, firstErr);
+      renderSentence();
+      flashError();
+    }
+  }
+});
+
+// Keep input focused
+document.getElementById('screen-game').addEventListener('click', () => {
+  document.getElementById('type-input').focus();
+});
+
+// ── SENTENCE COMPLETE ─────────────────────────────────────────────────────────
+function sentenceComplete() {
+  sentencesDone++;
+  document.getElementById('hud-count').textContent = sentencesDone;
+  flashPlusOne();
+  // Sofort weiter zum nächsten Satz – keine Pause, die Zeit kostet!
+  nextSentence();
+}
+
+// Kurzes "+1"-Aufblitzen, das das Tippen nicht blockiert.
+let flashTimer;
+function flashPlusOne() {
+  const el = document.getElementById('lap-result');
+  el.innerHTML = `<strong style="color:#4ade80">✓ +1 – weiter!</strong>`;
+  el.classList.add('vis');
+  clearTimeout(flashTimer);
+  flashTimer = setTimeout(() => el.classList.remove('vis'), 600);
+}
+
+// Deutlicher Hinweis, wenn der Satz am Ende noch einen Fehler hat: Cursor steht
+// auf dem ersten falschen Zeichen, ab dort weitertippen.
+function flashError() {
+  const el = document.getElementById('lap-result');
+  el.innerHTML = `<strong style="color:#f87171">⚠ Hier stimmt etwas nicht – tippe ab dem markierten Zeichen weiter!</strong>`;
+  el.classList.add('vis');
+  clearTimeout(flashTimer);
+  flashTimer = setTimeout(() => el.classList.remove('vis'), 1600);
+}
+
+// ── END ───────────────────────────────────────────────────────────────────────
+function endGame() {
+  gameActive = false;
+  cancelAnimationFrame(timerRAF);
+  document.getElementById('hud-timer').classList.remove('low');
+
+  const accuracy = charsTyped > 0
+    ? Math.round((charsTyped - errors) / charsTyped * 100) : 100;
+
+  saveScore(playerName, sentencesDone);
+
+  // Build summary grid
+  document.getElementById('lap-grid').innerHTML = `
+    <div class="lap-box">
+      <div class="lap-n">Sätze</div>
+      <div class="lap-t">${sentencesDone}</div>
+      <div class="lap-acc">geschafft</div>
+    </div>
+    <div class="lap-box">
+      <div class="lap-n">Zeichen</div>
+      <div class="lap-t">${charsTyped}</div>
+      <div class="lap-acc">getippt</div>
+    </div>
+    <div class="lap-box">
+      <div class="lap-n">Genauigkeit</div>
+      <div class="lap-t">${accuracy}%</div>
+      <div class="lap-acc">${errors} Fehler</div>
+    </div>`;
+
+  document.getElementById('end-total').textContent = sentencesDone;
+  document.getElementById('end-name').textContent  = playerName;
+  renderLeaderboard(sentencesDone);
+  showScreen('screen-end');
+}
+
+// ── LEADERBOARD ───────────────────────────────────────────────────────────────
+function saveScore(name, count) {
+  const list = loadScores();
+  list.push({ name, c: count });
+  list.sort((a, b) => b.c - a.c); // mehr Sätze = besser
+  try { localStorage.setItem(LB_KEY, JSON.stringify(list.slice(0, 10))); } catch {}
+}
+function loadScores() {
+  try { return JSON.parse(localStorage.getItem(LB_KEY)) || []; } catch { return []; }
+}
+const MEDALS = ['🥇','🥈','🥉'];
+function escH(s) {
+  return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+function renderLeaderboard(myCount) {
+  const scores = loadScores();
+  const el = document.getElementById('lb-list');
+  if (!scores.length) { el.innerHTML = '<div style="opacity:.55;font-size:.9rem">Noch keine Einträge.</div>'; return; }
+  let found = false;
+  el.innerHTML = scores.slice(0, 6).map((s, i) => {
+    const isMe = !found && s.name === playerName && s.c === myCount;
+    if (isMe) found = true;
+    return `<div class="lb-entry ${isMe ? 'lb-me' : ''}">
+      <span class="lb-rank">${MEDALS[i] || (i+1)+'.'}</span>
+      <span class="lb-name">${escH(s.name)}</span>
+      <span class="lb-pts">${s.c} Sätze</span>
+    </div>`;
+  }).join('');
+}
+
+function resetToStart() { showScreen('screen-start'); }
+
+// Laufendes Rennen abbrechen und zurück zur Startseite.
+function goHome() {
+  gameActive = false;
+  cancelAnimationFrame(timerRAF);
+  clearTimeout(flashTimer);
+  document.getElementById('hud-timer').classList.remove('low');
+  showScreen('screen-start');
+}
+
+document.getElementById('name-input').addEventListener('keydown', e => {
+  if (e.key === 'Enter') startGame();
+});
+</script>
+</body>
+</html>
