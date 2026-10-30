@@ -480,7 +480,7 @@ input[type="text"]:focus { border-color: rgba(255,255,255,0.6); background: rgba
 <div class="screen" id="screen-start">
   <div class="start-card">
     <h1>🖱️ Desktop-Challenge</h1>
-    <p class="sub">Maustraining · 60 Sekunden · Klasse 5 · NEU: Rechtsklick</p>
+    <p class="sub">Maustraining · Klasse 5 · NEU: Rechtsklick</p>
     <div class="instructions">
       <div class="task-row">
         <span class="badge b-green">Einmal klicken</span>
@@ -505,7 +505,7 @@ input[type="text"]:focus { border-color: rgba(255,255,255,0.6); background: rgba
     </div>
     <input type="text" id="name-input" placeholder="Dein Name …" maxlength="20" autocomplete="off">
     <div class="mode-buttons">
-      <button class="btn-mode active" id="mode-challenge" onclick="selectMode('challenge')">⏱️ Challenge<small>60 Sekunden</small></button>
+      <button class="btn-mode active" id="mode-challenge" onclick="selectMode('challenge')">⏱️ Challenge<small>10 Aufgaben · 8 richtig zum Bestehen</small></button>
       <button class="btn-mode" id="mode-practice" onclick="selectMode('practice')">🎯 Übungsmodus<small>Kein Zeitlimit</small></button>
     </div>
     <button class="btn-primary" onclick="startGame()">Los geht's! 🚀</button>
@@ -552,6 +552,7 @@ input[type="text"]:focus { border-color: rgba(255,255,255,0.6); background: rgba
     </div>
     <p class="end-hint" id="end-hint">Vergleiche deinen Score mit deinen Mitschülern!</p>
     <button class="btn-primary" onclick="resetToStart()">Nochmal spielen</button>
+    <p style="margin-top:12px"><a href="../" style="color:#2563eb;font-weight:700">Zur Stationsübersicht →</a></p>
   </div>
 </div>
 
@@ -573,6 +574,10 @@ const WINDOW_TITLES = [
 
 // ===== STATE =====
 let practiceMode = false;
+let ccChallengeHits = 0;
+let ccChallengeAttempts = 0;
+const CC_CHALLENGE_TASKS = ['right','single','double','close','drag','single','right','double','close','drag'];
+const CC_PROGRESS_KEY = 'computercampus-progress-v1';
 let score       = 0;
 let timeLeft    = GAME_DURATION;
 let gameActive  = false;
@@ -642,6 +647,7 @@ function selectMode(mode) {
 function startGame() {
   playerName = document.getElementById('name-input').value.trim() || 'Anonym';
   score = 0; timeLeft = GAME_DURATION; combo = 0; gameActive = false;
+  ccChallengeHits = 0; ccChallengeAttempts = 0;
   ccHelpManual = null;
   ccFirstTaskPending = true;
   document.getElementById('cc-help').style.display = practiceMode ? 'flex' : 'none';
@@ -677,7 +683,6 @@ function runCountdown(n) {
 
 function beginGame() {
   gameActive = true;
-  if (!practiceMode) timerIntvl = setInterval(tickTimer, 1000);
   spawnNext();
 }
 
@@ -690,7 +695,7 @@ function tickTimer() {
 
 function updateHUD() {
   document.getElementById('hud-score').textContent = score;
-  document.getElementById('hud-timer').textContent = practiceMode ? '∞' : timeLeft;
+  document.getElementById('hud-timer').textContent = practiceMode ? '∞' : (ccChallengeAttempts + 1) + '/10';
 }
 
 // ===== TASK LOGIC =====
@@ -790,11 +795,11 @@ function spawnNext() {
   const dh = desktop.clientHeight;
   const elW = 215, elH = 95;
 
-  const waveSize = ccFirstTaskPending ? 1 : pickWaveSize();
+  const waveSize = practiceMode ? (ccFirstTaskPending ? 1 : pickWaveSize()) : 1;
 
   // Drag only allowed as single target
   if (waveSize === 1) {
-    currentTask = ccFirstTaskPending ? 'right' : pickTask();
+    currentTask = practiceMode ? (ccFirstTaskPending ? 'right' : pickTask()) : CC_CHALLENGE_TASKS[ccChallengeAttempts];
     ccFirstTaskPending = false;
   } else {
     currentTask = 'mixed';
@@ -802,7 +807,7 @@ function spawnNext() {
   setTaskBar(currentTask);
   ccRenderHelp(currentTask);
 
-  const dur = targetDuration(currentTask);
+  const dur = practiceMode ? targetDuration(currentTask) : 12000;
 
   if (currentTask === 'drag') {
     const [pos] = spreadPositions(1, dw, dh, elW, elH);
@@ -853,7 +858,10 @@ function spawnNext() {
         combo = 0; score = Math.max(0, score - remaining.length * 5);
         hideComboBadge(); updateHUD(); flashMiss();
       }
-      setTimeout(spawnNext, 150);
+      ccChallengeAttempts++;
+      updateHUD();
+      if (ccChallengeAttempts >= 10) endGame();
+      else setTimeout(spawnNext, 150);
     }, dur);
   }
 }
@@ -976,6 +984,7 @@ function onHit(el) {
   if (!gameActive || !activeTargets.includes(el)) return;
 
   combo++;
+  if (!practiceMode) { ccChallengeHits++; ccChallengeAttempts++; }
   const task = ccTaskFor(el);
   const pts = combo >= 3 ? 15 : 10;
   if (practiceMode && ccSuccess[task] !== undefined) ccSuccess[task] = Math.min(5,ccSuccess[task]+1);
@@ -992,7 +1001,8 @@ function onHit(el) {
   if (activeTargets.length === 0) {
     clearTimeout(targetTmout);
     targetTmout = null;
-    setTimeout(spawnNext, 80);
+    if (!practiceMode && ccChallengeAttempts >= 10) endGame();
+    else setTimeout(spawnNext, 80);
   }
 }
 
@@ -1047,11 +1057,18 @@ function endGame() {
     lbSection.classList.add('hidden');
     endHint.textContent  = 'Gut geübt! Im Challenge-Modus kannst du dich mit anderen messen.';
   } else {
-    heading.textContent  = 'Zeit abgelaufen! ⏱️';
-    lbSection.classList.remove('hidden');
-    endHint.textContent  = 'Vergleiche deinen Score mit deinen Mitschülern!';
-    saveScore(playerName, score);
-    renderLeaderboard();
+    const passed = ccChallengeHits >= 8;
+    heading.textContent = passed ? 'Challenge bestanden! 🎉' : 'Weiter üben! 💪';
+    lbSection.classList.add('hidden');
+    endHint.textContent = ccChallengeHits + ' von 10 Aufgaben geschafft. ' +
+      (passed ? 'Die Tastatur-Station ist jetzt freigeschaltet!' : 'Für die Freischaltung brauchst du mindestens 8 richtige Aufgaben.');
+    if (passed) {
+      try {
+        const progress = JSON.parse(localStorage.getItem(CC_PROGRESS_KEY) || '{}');
+        progress.mouse = true;
+        localStorage.setItem(CC_PROGRESS_KEY, JSON.stringify(progress));
+      } catch (_) {}
+    }
   }
 
   setTimeout(() => {
