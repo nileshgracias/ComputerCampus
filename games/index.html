@@ -8,7 +8,7 @@
 <main><p><a href="../">← Zurück zum Campus</a></p>
 <div class="progress-note" id="progress-note" role="status">Fortschritt wird geladen …</div>
 <div class="worlds">
-<article class="world active station"><span class="symbol">🖱️</span><h2>1. Maustraining</h2><p>Trainiere Klick, Doppelklick, Rechtsklick, Fensterschließen und Ziehen.</p><p>Bestehe mindestens 8 von 10 Aufgaben in der Challenge.</p><p class="status" id="mouse-status">Noch nicht bestanden</p><a href="maus/">Üben oder Challenge starten</a></article>
+<article class="world active station"><span class="symbol">🖱️</span><h2>1. Maustraining</h2><p>Trainiere Klick, Doppelklick, Rechtsklick, Fensterschließen und Ziehen.</p><p>Löse je 20 Aufgaben zu fünf Mausaktionen. Mindestens 16 von 20 pro Bereich müssen richtig sein (80 %).</p><p class="status" id="mouse-status">Noch nicht bestanden</p><a href="maus/">Üben oder Challenge starten</a></article>
 <article class="world station locked" id="keyboard-card"><span class="symbol">⌨️</span><h2>2. Tastaturtraining</h2><p>Entdecke die Tastatur und ihre Tasten.</p><p class="status" id="keyboard-status">🔒 Erst Maustraining bestehen</p><a href="tastatur/" id="keyboard-link" hidden>Tastaturtraining öffnen</a><button id="keyboard-lock" disabled>🔒 Gesperrt</button></article>
 <article class="world station locked" id="race-card"><span class="symbol">🏁</span><h2>3. Tipp-Rennen</h2><p>Übe Sonderzeichen auf der Tastatur.</p><p class="status">🔒 Freischaltung nach der Tastatur-Challenge</p><button disabled>🔒 Gesperrt</button></article>
 </div>
@@ -20,7 +20,7 @@
  try{progress=JSON.parse(localStorage.getItem('computercampus-progress-v1')||'{}')}catch(_){}
  const passed=progress.mouse===true;
  document.getElementById('mouse-status').textContent=passed?'✅ Challenge bestanden – jederzeit wiederholbar':'🔓 Bereit zum Üben';
- document.getElementById('progress-note').textContent=passed?'🎉 Maustraining bestanden! Die Tastatur-Station ist freigeschaltet.':'Starte mit dem Maustraining. Nach mindestens 8 von 10 richtigen Aufgaben wird die Tastatur-Station freigeschaltet.';
+ document.getElementById('progress-note').textContent=passed?'🎉 Maustraining bestanden! Die Tastatur-Station ist freigeschaltet.':'Starte mit dem Maustraining. Erst wenn du in allen fünf Mausbereichen mindestens 16 von 20 Aufgaben richtig löst, wird die Tastatur-Station freigeschaltet.';
  if(passed){
   document.getElementById('keyboard-card').classList.remove('locked');
   document.getElementById('keyboard-status').textContent='🔓 Freigeschaltet – Übungsmodus verfügbar';
