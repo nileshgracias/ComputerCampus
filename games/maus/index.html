@@ -472,6 +472,14 @@ input[type="text"]:focus { border-color: rgba(255,255,255,0.6); background: rgba
 @keyframes cc-drag{0%,100%{transform:translateX(-24px)}50%{transform:translateX(25px)}}
 #cc-help-count{font-weight:700}
 @media(max-width:740px){#cc-help{width:175px;padding:8px}#cc-help-visual{height:90px}.cc-device{transform:scale(.7)}}
+#cc-challenge-progress{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:6px;padding:10px;background:#0f172a;color:#fff}
+#cc-challenge-progress[hidden]{display:none}
+.cc-progress-item{padding:8px 5px;border-radius:8px;background:#334155;text-align:center;font-size:13px;line-height:1.5;border:2px solid transparent}
+.cc-progress-item.active{border-color:#fbbf24;background:#1e40af}
+.cc-progress-item.passed{background:#166534}
+.cc-progress-item.failed{background:#7f1d1d}
+.cc-progress-item strong{display:block;font-size:15px}
+@media(max-width:800px){#cc-challenge-progress{grid-template-columns:repeat(2,minmax(0,1fr))}}
 </style>
 </head>
 <body>
@@ -533,7 +541,7 @@ input[type="text"]:focus { border-color: rgba(255,255,255,0.6); background: rgba
     <span id="hud-timer">60</span>
     <button id="stop-btn" class="hidden" onclick="endGame()">■ Beenden</button>
   </div>
-  <div id="task-bar"></div><div id="cc-challenge-progress" style="padding:8px 16px;background:#111827;color:#fff;font-weight:800;text-align:center" hidden></div>
+  <div id="task-bar"></div><div id="cc-challenge-progress" hidden aria-live="polite"></div>
   <div id="game-workspace"><div id="desktop"></div>
 <aside id="cc-help" aria-label="Bedienungshilfe">
 <h2>💡 Bedienungshilfe</h2>
@@ -571,7 +579,7 @@ input[type="text"]:focus { border-color: rgba(255,255,255,0.6); background: rgba
 
 <script>
 // ===== CONFIG =====
-const GAME_DURATION = 900; // 15 Minuten für 100 Aufgaben
+const GAME_DURATION = 900; // 15 Minuten für 5 × 20 Aufgaben
 const LB_KEY = 'desktop_challenge_v1';
 
 const FOLDER_NAMES = [
@@ -717,15 +725,25 @@ function updateHUD() {
   document.getElementById('hud-score').textContent = score;
   document.getElementById('hud-timer').textContent = practiceMode ? '∞' : Math.floor(timeLeft/60) + ':' + String(timeLeft%60).padStart(2,'0');
   const progress = document.getElementById('cc-challenge-progress');
-  if(progress){
-    progress.hidden = practiceMode;
-    if(!practiceMode){
-      const index = Math.min(ccChallengeAttempts,99);
-      const task = CC_CHALLENGE_TASKS[index];
-      const attempted = Math.min(ccChallengeAttempts%20,20);
-      progress.textContent = TASK_LABELS[task] + '  ·  ' + ccHitsByType[task] + ' von 20 erfolgreich  ·  Versuch ' + (attempted+1) + '/20  ·  Gesamt ' + ccChallengeAttempts + '/100';
-    }
-  }
+  progress.hidden = practiceMode;
+  if (practiceMode) return;
+  const labels = {single:'Einfachklick',double:'Doppelklick',right:'Rechtsklick',close:'Fenster schließen',drag:'Drag & Drop'};
+  progress.replaceChildren();
+  CC_CHALLENGE_TYPES.forEach((task,index) => {
+    const completed = Math.max(0,Math.min(20,ccChallengeAttempts - index*20));
+    const hits = ccHitsByType[task];
+    const card = document.createElement('div');
+    const isActive = ccChallengeAttempts < 100 && Math.floor(ccChallengeAttempts/20) === index;
+    card.className = 'cc-progress-item' + (isActive ? ' active' : '') + (completed === 20 ? (hits >= 16 ? ' passed' : ' failed') : '');
+    const name = document.createElement('span');
+    name.textContent = labels[task];
+    const result = document.createElement('strong');
+    result.textContent = hits + ' von 20 erfolgreich';
+    const attempts = document.createElement('small');
+    attempts.textContent = completed + '/20 versucht' + (completed === 20 ? (hits >= 16 ? ' · ✓' : ' · ✗') : '');
+    card.append(name,result,attempts);
+    progress.appendChild(card);
+  });
 }
 
 // ===== TASK LOGIC =====
@@ -825,6 +843,7 @@ function spawnNext() {
   const dh = desktop.clientHeight;
   const elW = 215, elH = 95;
 
+  if (!practiceMode && ccChallengeAttempts >= CC_CHALLENGE_TASKS.length) { endGame(); return; }
   const waveSize = practiceMode ? (ccFirstTaskPending ? 1 : pickWaveSize()) : 1;
 
   // Drag only allowed as single target
@@ -890,7 +909,7 @@ function spawnNext() {
       }
       ccChallengeAttempts++;
       updateHUD();
-      if (ccChallengeAttempts >= 100) endGame();
+      if (ccChallengeAttempts >= CC_CHALLENGE_TASKS.length) endGame();
       else setTimeout(spawnNext, 150);
     }, dur);
   }
