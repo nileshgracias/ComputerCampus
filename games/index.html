@@ -1,1 +1,31 @@
-<!doctype html><html lang="de"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>ComputerCampus – Lernwelt 1</title><link rel="stylesheet" href="../css/style.css"></head><body><header class="hero"><p class="eyebrow">Lernwelt 1</p><h1>Maus & Tastatur</h1><p>Wähle dein Training</p></header><main><p><a href="../">← Zurück zum Campus</a></p><div class="worlds"><article class="world active"><span class="symbol">🖱️</span><h2>Maustraining</h2><p>Trainiere die Bedienung der Computermaus.</p><a href="maus/">Spiel öffnen</a></article><article class="world active"><span class="symbol">⌨️</span><h2>Tastaturtraining</h2><p>Entdecke die Tastatur und ihre Tasten.</p><a href="tastatur/">Spiel öffnen</a></article><article class="world active"><span class="symbol">🏁</span><h2>Tipp-Rennen</h2><p>Übe Sonderzeichen auf der Tastatur.</p><a href="tipp-rennen/">Spiel öffnen</a></article></div><p>Hinweis: Die Spiele sind zunächst einzeln spielbar. Die automatische Fortschrittskontrolle und das Touchpad-Modul werden noch entwickelt.</p></main><footer>Originalspiele von Alexander Trapp (GitHub: altra102), Lizenz CC BY-SA 4.0. <a href="../ATTRIBUTION.md">Urheberhinweise</a></footer></body></html>
+<!doctype html>
+<html lang="de"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>ComputerCampus – Lernwelt 1</title><link rel="stylesheet" href="../css/style.css">
+<style>
+.station{position:relative}.station.locked{opacity:.7}.station a,.station button{display:inline-block;margin-top:10px;padding:10px 14px;border-radius:8px;background:#1d4ed8;color:white;border:0;text-decoration:none;font:inherit;font-weight:700}.station button:disabled{background:#64748b;cursor:not-allowed}.status{font-weight:700;margin-top:12px}.progress-note{padding:15px;border:1px solid #cbd5e1;border-radius:10px;margin:20px 0}
+</style></head><body>
+<header class="hero"><p class="eyebrow">Lernwelt 1</p><h1>Maus &amp; Tastatur</h1><p>Üben, Challenge bestehen und die nächste Station freischalten.</p></header>
+<main><p><a href="../">← Zurück zum Campus</a></p>
+<div class="progress-note" id="progress-note" role="status">Fortschritt wird geladen …</div>
+<div class="worlds">
+<article class="world active station"><span class="symbol">🖱️</span><h2>1. Maustraining</h2><p>Trainiere Klick, Doppelklick, Rechtsklick, Fensterschließen und Ziehen.</p><p>Bestehe mindestens 8 von 10 Aufgaben in der Challenge.</p><p class="status" id="mouse-status">Noch nicht bestanden</p><a href="maus/">Üben oder Challenge starten</a></article>
+<article class="world station locked" id="keyboard-card"><span class="symbol">⌨️</span><h2>2. Tastaturtraining</h2><p>Entdecke die Tastatur und ihre Tasten.</p><p class="status" id="keyboard-status">🔒 Erst Maustraining bestehen</p><a href="tastatur/" id="keyboard-link" hidden>Tastaturtraining öffnen</a><button id="keyboard-lock" disabled>🔒 Gesperrt</button></article>
+<article class="world station locked" id="race-card"><span class="symbol">🏁</span><h2>3. Tipp-Rennen</h2><p>Übe Sonderzeichen auf der Tastatur.</p><p class="status">🔒 Freischaltung nach der Tastatur-Challenge</p><button disabled>🔒 Gesperrt</button></article>
+</div>
+<p>Das Touchpad-Modul, die Tastatur-Challenge und die Abschlussmission werden noch ergänzt. Die Freischaltung wird derzeit nur in diesem Browser gespeichert; Schülerkonten folgen später.</p>
+</main><footer>Originalspiele von Alexander Trapp (GitHub: altra102), Lizenz CC BY-SA 4.0. <a href="../ATTRIBUTION.md">Urheberhinweise</a></footer>
+<script>
+(function(){
+ let progress={};
+ try{progress=JSON.parse(localStorage.getItem('computercampus-progress-v1')||'{}')}catch(_){}
+ const passed=progress.mouse===true;
+ document.getElementById('mouse-status').textContent=passed?'✅ Challenge bestanden – jederzeit wiederholbar':'🔓 Bereit zum Üben';
+ document.getElementById('progress-note').textContent=passed?'🎉 Maustraining bestanden! Die Tastatur-Station ist freigeschaltet.':'Starte mit dem Maustraining. Nach mindestens 8 von 10 richtigen Aufgaben wird die Tastatur-Station freigeschaltet.';
+ if(passed){
+  document.getElementById('keyboard-card').classList.remove('locked');
+  document.getElementById('keyboard-status').textContent='🔓 Freigeschaltet – Übungsmodus verfügbar';
+  document.getElementById('keyboard-link').hidden=false;
+  document.getElementById('keyboard-lock').hidden=true;
+ }
+})();
+</script></body></html>
