@@ -462,7 +462,12 @@ input[type="text"]:focus { border-color: rgba(255,255,255,0.6); background: rgba
 .cc-device.double .cc-active{animation-duration:.7s}
 .cc-device.drag{animation:cc-drag 2s infinite}
 .cc-device.close .cc-active{background:#f87171}
-.cc-device.right .cc-active{left:36px;background:#22d3ee;animation:cc-click 1.6s infinite}
+.cc-device.right .cc-active{left:36px;width:25px;background:#a16207;animation:cc-right-click 1.6s infinite}
+@keyframes cc-right-click{0%,40%,100%{background:#d6d3d1;transform:translateY(0)}16%{background:#292524;transform:translateY(4px)}}
+#cc-help-visual .cc-device.right{border-color:#292524}
+#cc-help-visual .cc-device.right:before,#cc-help-visual .cc-device.right:after{border-color:#292524}
+.cc-help-action{font-size:12px;color:#292524;text-align:center;font-weight:800}
+#cc-help-visual{flex-direction:column;gap:5px}
 @keyframes cc-click{0%,45%,100%{background:#93c5fd}18%{background:#1d4ed8}}
 @keyframes cc-drag{0%,100%{transform:translateX(-24px)}50%{transform:translateX(25px)}}
 #cc-help-count{font-weight:700}
@@ -486,7 +491,7 @@ input[type="text"]:focus { border-color: rgba(255,255,255,0.6); background: rgba
         <span>Zweimal schnell auf den Ordner klicken</span>
       </div>
       <div class="task-row">
-        <span class="badge" style="background:#0891b2;color:white">Rechtsklick</span>
+        <span class="badge" style="background:#292524;color:white">Rechtsklick</span>
         <span>Mit der rechten Maustaste das Kontextmenü öffnen</span>
       </div>
       <div class="task-row">
@@ -520,7 +525,7 @@ input[type="text"]:focus { border-color: rgba(255,255,255,0.6); background: rgba
 <aside id="cc-help" aria-label="Bedienungshilfe">
 <h2>💡 Bedienungshilfe</h2>
 <p id="cc-help-task">Die Hilfe passt sich an die Aufgabe an.</p>
-<div id="cc-help-visual" aria-hidden="true"><div class="cc-device"><div class="cc-active"></div></div></div>
+<div id="cc-help-visual" aria-hidden="true"><div class="cc-device"><div class="cc-active"></div></div><span id="cc-help-action" class="cc-help-action"></span></div>
 <p id="cc-help-count">Erfolge: 0 von 5</p>
 <button type="button" id="cc-help-toggle" onclick="ccToggleHelp()">Hilfe ausblenden</button>
 
@@ -618,6 +623,7 @@ function ccRenderHelp(task){
  const visual = document.getElementById('cc-help-visual');
  visual.style.display = shown ? 'flex':'none';
  visual.querySelector('.cc-device').className = 'cc-device '+task;
+ document.getElementById('cc-help-action').textContent = task === 'right' ? 'RECHTE TASTE DRÜCKEN' : '';
  document.getElementById('cc-help-task').textContent = ccInstructions[task];
  document.getElementById('cc-help-count').textContent = 'Erfolge: '+(ccSuccess[task]||0)+' von 5';
  document.getElementById('cc-help-toggle').textContent = shown?'Hilfe ausblenden':'Hilfe anzeigen';
@@ -720,7 +726,7 @@ const TASK_LABELS = {
 const TASK_COLORS = {
   single: '#4caf50',
   double: '#f59e0b',
-  right:  '#0891b2',
+  right:  '#292524',
   close:  '#ef5350',
   drag:   '#7c3aed',
   mixed:  '#ffffff',
@@ -877,7 +883,7 @@ function buildFolderTarget(task, dur) {
       // Zeige ein einfaches Kontextmenü, statt den Browserdialog.
       const menu = document.createElement('div');
       menu.textContent = '📂 Öffnen   ·   ✏️ Umbenennen   ·   ℹ️ Eigenschaften';
-      menu.style.cssText = 'position:absolute;left:8px;top:78px;min-width:205px;padding:10px;background:white;color:#1e293b;border:2px solid #0891b2;border-radius:8px;box-shadow:0 5px 15px #0005;z-index:30;font-size:12px;';
+      menu.style.cssText = 'position:absolute;left:8px;top:78px;min-width:205px;padding:10px;background:white;color:#1e293b;border:2px solid #292524;border-radius:8px;box-shadow:0 5px 15px #0005;z-index:30;font-size:12px;';
       el.appendChild(menu);
       setTimeout(() => onHit(el), 550);
     });
