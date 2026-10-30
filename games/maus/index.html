@@ -446,6 +446,26 @@ input[type="text"]:focus { border-color: rgba(255,255,255,0.6); background: rgba
 }
 
 /* ---- Shrink animation (inserted dynamically) ---- */
+
+/* ComputerCampus: adaptive Bedienungshilfe */
+#game-workspace{display:flex;flex:1;min-height:0}
+#game-workspace #desktop{min-width:0}
+#cc-help{width:230px;flex-shrink:0;background:#f8fafc;color:#17324d;border-left:3px solid #bfdbfe;padding:14px;display:flex;flex-direction:column;gap:12px;overflow:auto;font-family:inherit}
+#cc-help h2{font-size:1.05rem;margin:0}
+#cc-help p{font-size:.82rem;line-height:1.45;margin:0}
+#cc-help button{padding:9px;border:0;border-radius:9px;background:#1d4ed8;color:white;font-weight:700;cursor:pointer}
+#cc-help-visual{height:120px;border-radius:12px;background:#e0efff;display:flex;align-items:center;justify-content:center}
+.cc-device{width:67px;height:95px;border:3px solid #2563eb;border-radius:32px;position:relative;background:white;overflow:hidden}
+.cc-device:before{content:"";position:absolute;left:50%;height:38px;top:0;border-left:2px solid #2563eb}
+.cc-device:after{content:"";position:absolute;top:38px;left:0;right:0;border-top:2px solid #2563eb}
+.cc-active{position:absolute;left:3px;top:3px;width:27px;height:31px;border-radius:18px;background:#93c5fd;animation:cc-click 1.6s infinite}
+.cc-device.double .cc-active{animation-duration:.7s}
+.cc-device.drag{animation:cc-drag 2s infinite}
+.cc-device.close .cc-active{background:#f87171}
+@keyframes cc-click{0%,45%,100%{background:#93c5fd}18%{background:#1d4ed8}}
+@keyframes cc-drag{0%,100%{transform:translateX(-24px)}50%{transform:translateX(25px)}}
+#cc-help-count{font-weight:700}
+@media(max-width:740px){#cc-help{width:175px;padding:8px}#cc-help-visual{height:90px}.cc-device{transform:scale(.7)}}
 </style>
 </head>
 <body>
@@ -491,7 +511,15 @@ input[type="text"]:focus { border-color: rgba(255,255,255,0.6); background: rgba
     <button id="stop-btn" class="hidden" onclick="endGame()">■ Beenden</button>
   </div>
   <div id="task-bar"></div>
-  <div id="desktop"></div>
+  <div id="game-workspace"><div id="desktop"></div>
+<aside id="cc-help" aria-label="Bedienungshilfe">
+<h2>💡 Bedienungshilfe</h2>
+<p id="cc-help-task">Die Hilfe passt sich an die Aufgabe an.</p>
+<div id="cc-help-visual" aria-hidden="true"><div class="cc-device"><div class="cc-active"></div></div></div>
+<p id="cc-help-count">Erfolge: 0 von 5</p>
+<button type="button" id="cc-help-toggle" onclick="ccToggleHelp()">Hilfe ausblenden</button>
+<p id="cc-help-penalty">Im Challenge-Modus gibt es mit sichtbarer Hilfe nur 50 % der Punkte.</p>
+</aside></div>
 </div>
 
 <!-- Combo badge -->
@@ -561,6 +589,38 @@ function showScreen(id) {
 }
 
 // ===== GAME FLOW =====
+const ccSuccess = {single:0,double:0,close:0,drag:0};
+let ccHelpManual = null;
+let ccShownTask = 'single';
+const ccInstructions = {
+ single:'Einmal mit der linken Maustaste klicken.',
+ double:'Zweimal schnell mit der linken Maustaste klicken.',
+ close:'Auf das X oben rechts im Fenster klicken.',
+ drag:'Linke Maustaste gedrückt halten, Fenster bewegen und loslassen.',
+ mixed:'Achte auf die Farbe der Ziele: Grün = Klick, Orange = Doppelklick, Rot = Schließen.'
+};
+function ccTaskFor(el){
+ return el.dataset.ccTask || (el.classList.contains('drag-win')?'drag':currentTask);
+}
+function ccHelpVisible(task){
+ return ccHelpManual === true || (ccHelpManual === null && practiceMode && (ccSuccess[task]||0)<5);
+}
+function ccRenderHelp(task){
+ ccShownTask = task;
+ const shown = ccHelpVisible(task);
+ const visual = document.getElementById('cc-help-visual');
+ visual.style.display = shown ? 'flex':'none';
+ visual.querySelector('.cc-device').className = 'cc-device '+task;
+ document.getElementById('cc-help-task').textContent = ccInstructions[task];
+ document.getElementById('cc-help-count').textContent = 'Erfolge: '+(ccSuccess[task]||0)+' von 5';
+ document.getElementById('cc-help-toggle').textContent = shown?'Hilfe ausblenden':'Hilfe anzeigen';
+ document.getElementById('cc-help-penalty').style.display = practiceMode?'none':'block';
+}
+function ccToggleHelp(){
+ const wasVisible=ccHelpVisible(ccShownTask);
+ ccHelpManual = !wasVisible;
+ ccRenderHelp(ccShownTask);
+}
 function selectMode(mode) {
   practiceMode = (mode === 'practice');
   document.getElementById('mode-challenge').classList.toggle('active', !practiceMode);
@@ -570,6 +630,8 @@ function selectMode(mode) {
 function startGame() {
   playerName = document.getElementById('name-input').value.trim() || 'Anonym';
   score = 0; timeLeft = GAME_DURATION; combo = 0; gameActive = false;
+  ccHelpManual = null;
+  ccRenderHelp('single');
   document.getElementById('hud-name').textContent = playerName;
   document.getElementById('hud-timer').classList.remove('urgent');
   document.getElementById('stop-btn').classList.toggle('hidden', !practiceMode);
@@ -718,6 +780,7 @@ function spawnNext() {
     currentTask = 'mixed';
   }
   setTaskBar(currentTask);
+  ccRenderHelp(currentTask);
 
   const dur = targetDuration(currentTask);
 
@@ -782,6 +845,7 @@ function buildFolderTarget(task, dur) {
 
   const el = document.createElement('div');
   el.className = 'target';
+  el.dataset.ccTask = task;
   el.innerHTML = `
     <div class="folder-wrap" style="border-color:${color}; background:rgba(0,0,0,0.18);">
       <div class="folder-icon"></div>
@@ -811,6 +875,7 @@ function buildWindowTarget(dur) {
 
   const el = document.createElement('div');
   el.className = 'target';
+  el.dataset.ccTask = 'close';
   el.innerHTML = `
     <div class="window-wrap">
       <div class="win-titlebar">
@@ -836,6 +901,7 @@ function buildDragWindowTarget(dur) {
   const color = TASK_COLORS['drag'];
   const el = document.createElement('div');
   el.className = 'target drag-win';
+  el.dataset.ccTask = 'drag';
   el.innerHTML = `
     <div class="window-wrap" style="cursor:default;">
       <div class="win-titlebar" style="background:${color}; cursor:grab;">
@@ -878,7 +944,11 @@ function onHit(el) {
   if (!gameActive || !activeTargets.includes(el)) return;
 
   combo++;
-  const pts = combo >= 3 ? 15 : 10;
+  const task = ccTaskFor(el);
+  const helpWasVisible = ccHelpVisible(task);
+  const pts = Math.round((combo >= 3 ? 15 : 10) * (!practiceMode && helpWasVisible ? 0.5 : 1));
+  if (ccSuccess[task] !== undefined) ccSuccess[task] = Math.min(5,ccSuccess[task]+1);
+  ccRenderHelp(task);
   score += pts;
   updateHUD();
   if (combo >= 3) showComboBadge();
