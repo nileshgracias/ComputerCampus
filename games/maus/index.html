@@ -513,7 +513,7 @@ input[type="text"]:focus { border-color: rgba(255,255,255,0.6); background: rgba
     </div>
     <input type="text" id="name-input" placeholder="Dein Name …" maxlength="20" autocomplete="off">
     <div class="mode-buttons">
-      <button class="btn-mode active" id="mode-challenge" onclick="selectMode('challenge')">⏱️ Challenge<small>5 × 20 Aufgaben · je 80 %</small></button>
+      <button class="btn-mode active" id="mode-challenge" onclick="selectMode('challenge')">⏱️ Challenge<small>5 × 15 Aufgaben · je 80 %</small></button>
       <button class="btn-mode" id="mode-practice" onclick="selectMode('practice')">🎯 Übungsmodus<small>Kein Zeitlimit</small></button>
     </div>
     <button class="btn-primary" onclick="startGame()">Los geht's! 🚀</button>
@@ -524,10 +524,10 @@ input[type="text"]:focus { border-color: rgba(255,255,255,0.6); background: rgba
 <div class="screen hidden" id="screen-rules">
  <div class="start-card">
   <h1>🎯 Deine Challenge</h1>
-  <p>Du bearbeitest fünf Bereiche mit jeweils <strong>20 Aufgaben</strong>:</p>
+  <p>Du bearbeitest fünf Bereiche mit jeweils <strong>15 Aufgaben</strong>:</p>
   <p>Einfachklick · Doppelklick · Rechtsklick · Fenster schließen · Drag &amp; Drop</p>
-  <p><strong>Bestehensregel:</strong> In jedem Bereich mindestens <strong>16 von 20 Aufgaben (80 %)</strong> richtig lösen. Nur dann wird das Tastaturtraining freigeschaltet.</p>
-  <p><strong>Zeit:</strong> Insgesamt 20 Minuten. Pro Aufgabe hast du maximal 10 Sekunden. Verpasste Aufgaben zählen als Fehler.</p>
+  <p><strong>Bestehensregel:</strong> In jedem Bereich mindestens <strong>12 von 15 Aufgaben (80 %)</strong> richtig lösen. Nur dann wird das Tastaturtraining freigeschaltet.</p>
+  <p><strong>Zeit:</strong> Insgesamt maximal 8 Minuten. Pro Aufgabe hast du maximal 10 Sekunden. Verpasste Aufgaben zählen als Fehler.</p>
   <p>Deinen Fortschritt siehst du oben im Spielfeld. Die Bedienungshilfe ist in der Challenge ausgeschaltet.</p>
   <button class="btn-primary" onclick="ccStartChallenge()">Verstanden – Countdown starten</button>
   <p><button type="button" onclick="resetToStart()" style="margin-top:12px">Zurück zur Auswahl</button></p>
@@ -579,7 +579,7 @@ input[type="text"]:focus { border-color: rgba(255,255,255,0.6); background: rgba
 
 <script>
 // ===== CONFIG =====
-const GAME_DURATION = 1200; // 20 Minuten für 5 × 20 Aufgaben
+const GAME_DURATION = 480; // Maximal 8 Minuten für 5 × 15 Aufgaben
 const LB_KEY = 'desktop_challenge_v1';
 
 const FOLDER_NAMES = [
@@ -600,11 +600,11 @@ let ccChallengeAttempts = 0;
 const CC_CHALLENGE_TYPES = ['single','double','right','close','drag'];
 let CC_CHALLENGE_TASKS = [];
 function ccCreateBalancedTasks() {
-  // 20 zufällige Runden mit jeweils allen fünf unterschiedlichen Bedienhandlungen.
+  // 15 zufällige Runden mit jeweils allen fünf unterschiedlichen Bedienhandlungen.
   // Dadurch wechselt der Aufgabentyp garantiert nach jedem Versuch.
   const tasks = [];
   let previous = null;
-  for (let round = 0; round < 20; round++) {
+  for (let round = 0; round < 15; round++) {
     const group = [...CC_CHALLENGE_TYPES];
     for (let i = group.length - 1; i > 0; i--) {
       const j = Math.floor(Math.random() * (i + 1));
@@ -754,14 +754,14 @@ function updateHUD() {
     const completed = CC_CHALLENGE_TASKS.slice(0,ccChallengeAttempts).filter(t => t === task).length;
     const hits = ccHitsByType[task];
     const card = document.createElement('div');
-    const isActive = ccChallengeAttempts < 100 && CC_CHALLENGE_TASKS[ccChallengeAttempts] === task;
-    card.className = 'cc-progress-item' + (isActive ? ' active' : '') + (completed === 20 ? (hits >= 16 ? ' passed' : ' failed') : '');
+    const isActive = ccChallengeAttempts < CC_CHALLENGE_TASKS.length && CC_CHALLENGE_TASKS[ccChallengeAttempts] === task;
+    card.className = 'cc-progress-item' + (isActive ? ' active' : '') + (completed === 15 ? (hits >= 12 ? ' passed' : ' failed') : '');
     const name = document.createElement('span');
     name.textContent = labels[task];
     const result = document.createElement('strong');
-    result.textContent = hits + ' von 20 erfolgreich';
+    result.textContent = hits + ' von 15 erfolgreich';
     const attempts = document.createElement('small');
-    attempts.textContent = completed + '/20 versucht' + (completed === 20 ? (hits >= 16 ? ' · ✓' : ' · ✗') : '');
+    attempts.textContent = completed + '/15 versucht' + (completed === 15 ? (hits >= 12 ? ' · ✓' : ' · ✗') : '');
     card.append(name,result,attempts);
     progress.appendChild(card);
   });
@@ -1127,14 +1127,14 @@ function endGame() {
     lbSection.classList.add('hidden');
     endHint.textContent  = 'Gut geübt! Im Challenge-Modus kannst du dich mit anderen messen.';
   } else {
-    const passed = CC_CHALLENGE_TYPES.every(task => ccHitsByType[task] >= 16);
+    const passed = CC_CHALLENGE_TYPES.every(task => ccHitsByType[task] >= 12);
     heading.textContent = passed ? 'Challenge bestanden! 🎉' : 'Weiter üben! 💪';
     lbSection.classList.add('hidden');
     endHint.textContent = CC_CHALLENGE_TYPES.map(task =>
-      TASK_LABELS[task].replace(/[!]/g,'') + ': ' + ccHitsByType[task] + '/20'
+      TASK_LABELS[task].replace(/[!]/g,'') + ': ' + ccHitsByType[task] + '/15'
     ).join(' | ') + '. ' + (passed ?
       'Alle fünf Bereiche bestanden! Die Tastatur-Station ist freigeschaltet.' :
-      'Du brauchst in JEDEM Bereich mindestens 16 von 20 Erfolgen.');
+      'Du brauchst in JEDEM Bereich mindestens 12 von 15 Erfolgen.');
     if (passed) {
       try {
         const progress = JSON.parse(localStorage.getItem(CC_PROGRESS_KEY) || '{}');
