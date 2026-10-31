@@ -1,0 +1,1248 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ComputerCampus – Touchpad-Training</title>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  overflow: hidden;
+  user-select: none;
+  height: 100vh;
+  width: 100vw;
+}
+
+/* ---- Screens ---- */
+.screen {
+  position: fixed; inset: 0;
+  display: flex; align-items: center; justify-content: center;
+}
+.screen.hidden { display: none; }
+
+/* ---- Start Screen ---- */
+#screen-start {
+  background: linear-gradient(160deg, #1a3a5c 0%, #1d5ea8 60%, #3b82e0 100%);
+  flex-direction: column;
+  color: white;
+}
+
+.start-card {
+  background: rgba(255,255,255,0.1);
+  border: 1px solid rgba(255,255,255,0.2);
+  border-radius: 18px;
+  padding: 2.5rem 3rem;
+  text-align: center;
+  max-width: 500px;
+  width: 92%;
+}
+
+.start-card h1 { font-size: 2rem; font-weight: 800; margin-bottom: .3rem; }
+.start-card .sub { font-size: .95rem; opacity: .75; margin-bottom: 1.75rem; }
+
+.instructions {
+  background: rgba(0,0,0,0.25);
+  border-radius: 12px;
+  padding: 1rem 1.2rem;
+  margin-bottom: 1.5rem;
+  text-align: left;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.task-row { display: flex; align-items: center; gap: 10px; font-size: .9rem; }
+
+.badge {
+  padding: 3px 11px;
+  border-radius: 20px;
+  font-size: .8rem;
+  font-weight: 700;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+.b-green  { background: #16a34a; }
+.b-blue   { background: #d97706; }
+.b-red    { background: #dc2626; }
+.b-purple { background: #7c3aed; }
+
+input[type="text"] {
+  width: 100%;
+  padding: .7rem 1rem;
+  border-radius: 9px;
+  border: 2px solid rgba(255,255,255,0.25);
+  background: rgba(255,255,255,0.12);
+  color: white;
+  font-size: 1rem;
+  outline: none;
+  margin-bottom: 1rem;
+  text-align: center;
+}
+input[type="text"]::placeholder { color: rgba(255,255,255,0.45); }
+input[type="text"]:focus { border-color: rgba(255,255,255,0.6); background: rgba(255,255,255,0.18); }
+
+.btn-primary {
+  background: #f59e0b;
+  color: #1a1200;
+  border: none;
+  padding: .85rem 2rem;
+  font-size: 1.1rem;
+  font-weight: 800;
+  border-radius: 10px;
+  cursor: pointer;
+  width: 100%;
+  transition: background .12s, transform .08s;
+}
+.btn-primary:hover  { background: #fbbf24; }
+.btn-primary:active { transform: scale(.97); }
+
+.mode-buttons { display: flex; gap: 10px; margin-top: 0; }
+.btn-mode {
+  flex: 1;
+  padding: .8rem 1rem;
+  border-radius: 10px;
+  font-size: .95rem;
+  font-weight: 700;
+  border: 2px solid rgba(255,255,255,0.2);
+  background: rgba(255,255,255,0.1);
+  color: white;
+  cursor: pointer;
+  line-height: 1.4;
+  transition: background .12s, border-color .12s, transform .08s;
+}
+.btn-mode:hover  { background: rgba(255,255,255,0.22); border-color: rgba(255,255,255,0.5); }
+.btn-mode:active { transform: scale(.97); }
+.btn-mode small  { display: block; font-weight: 400; opacity: .65; font-size: .8rem; }
+.btn-mode.active { background: rgba(255,255,255,0.25); border-color: rgba(255,255,255,0.7); }
+.mode-buttons    { margin-bottom: 1rem; }
+
+#stop-btn {
+  margin-left: auto;
+  background: rgba(255,255,255,0.15);
+  border: 1px solid rgba(255,255,255,0.3);
+  color: white;
+  font-size: .82rem;
+  font-weight: 700;
+  padding: 4px 14px;
+  border-radius: 20px;
+  cursor: pointer;
+  transition: background .12s;
+}
+#stop-btn:hover { background: rgba(255,255,255,0.28); }
+
+/* ---- Game Screen ---- */
+#screen-game {
+  background: linear-gradient(180deg, #1565c0 0%, #1976d2 45%, #42a5f5 100%);
+  flex-direction: column;
+  align-items: stretch;
+  justify-content: flex-start;
+}
+
+/* HUD bar */
+#hud {
+  background: rgba(0,0,0,0.4);
+  padding: .55rem 1.2rem;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  color: white;
+  font-size: .9rem;
+  flex-shrink: 0;
+  z-index: 10;
+}
+.hud-name { font-weight: 700; opacity: .9; max-width: 160px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.hud-score-wrap { background: rgba(255,255,255,0.15); padding: 3px 13px; border-radius: 20px; }
+.hud-score-wrap span { font-weight: 800; font-size: 1rem; }
+#hud-timer {
+  margin-left: auto;
+  font-size: 1.5rem;
+  font-weight: 800;
+  min-width: 44px;
+  text-align: right;
+  transition: color .3s;
+}
+#hud-timer.urgent { color: #ff5252; }
+
+/* Task instruction bar */
+#task-bar {
+  text-align: center;
+  padding: .45rem .5rem;
+  font-size: 1.35rem;
+  font-weight: 800;
+  color: white;
+  text-shadow: 0 2px 8px rgba(0,0,0,0.35);
+  flex-shrink: 0;
+  min-height: 46px;
+  transition: color .2s;
+}
+
+/* Desktop play area */
+#desktop {
+  flex: 1;
+  position: relative;
+  overflow: hidden;
+  cursor: default;
+}
+
+/* ---- Targets ---- */
+.target {
+  position: absolute;
+  cursor: pointer;
+  animation: popIn .15s cubic-bezier(.34,1.56,.64,1);
+}
+.target.dying { animation: popOut .12s ease-in forwards; pointer-events: none; }
+
+@keyframes popIn {
+  from { transform: scale(0.3); opacity: 0; }
+  to   { transform: scale(1);   opacity: 1; }
+}
+@keyframes popOut {
+  to { transform: scale(0.3); opacity: 0; }
+}
+
+/* Folder */
+.folder-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
+  padding: 10px 12px 8px;
+  border-radius: 10px;
+  border: 3px solid transparent;
+  transition: border-color .15s;
+}
+.folder-icon {
+  width: 68px;
+  height: 56px;
+  position: relative;
+  filter: drop-shadow(0 3px 6px rgba(0,0,0,0.35));
+}
+.folder-icon::before {
+  content: '';
+  position: absolute;
+  top: 10px; left: 0;
+  width: 100%; height: calc(100% - 10px);
+  background: linear-gradient(160deg, #ffca28, #f9a825);
+  border-radius: 3px 6px 6px 6px;
+}
+.folder-icon::after {
+  content: '';
+  position: absolute;
+  top: 0; left: 0;
+  width: 42%; height: 14px;
+  background: #f9a825;
+  border-radius: 5px 5px 0 0;
+}
+.folder-label {
+  font-size: 12px;
+  color: white;
+  text-shadow: 0 1px 3px rgba(0,0,0,0.8);
+  font-weight: 700;
+  max-width: 90px;
+  text-align: center;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Timer progress bar under folder */
+.target-timer {
+  position: absolute;
+  bottom: 2px; left: 10px; right: 10px;
+  height: 3px;
+  border-radius: 2px;
+  transform-origin: left;
+}
+
+/* Window target */
+.window-wrap {
+  width: 210px;
+  border-radius: 7px;
+  overflow: hidden;
+  box-shadow: 0 6px 24px rgba(0,0,0,0.5);
+}
+.win-titlebar {
+  background: #1565c0;
+  display: flex;
+  align-items: center;
+  padding: 5px 7px;
+  gap: 6px;
+  position: relative;
+}
+.win-title-text {
+  color: white;
+  font-size: 12px;
+  font-weight: 700;
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.win-close {
+  width: 22px; height: 22px;
+  background: #e53935;
+  border: none;
+  border-radius: 4px;
+  color: white;
+  font-size: 13px;
+  font-weight: 800;
+  cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+  transition: background .1s, transform .08s;
+  line-height: 1;
+}
+.win-close:hover  { background: #c62828; }
+.win-close:active { transform: scale(.9); }
+.win-body {
+  background: #f5f5f5;
+  height: 55px;
+  padding: 8px 10px;
+  font-size: 11px;
+  color: #757575;
+  display: flex;
+  align-items: center;
+}
+
+/* ---- Countdown overlay ---- */
+#countdown {
+  position: fixed; inset: 0;
+  background: rgba(0,0,0,0.55);
+  display: flex; align-items: center; justify-content: center;
+  z-index: 200;
+  color: white;
+  font-size: 9rem;
+  font-weight: 900;
+  text-shadow: 0 4px 30px rgba(0,0,0,0.5);
+  animation: countPulse .5s ease-out;
+}
+#countdown.hidden { display: none; }
+@keyframes countPulse {
+  from { transform: scale(1.4); opacity: 0; }
+  to   { transform: scale(1);   opacity: 1; }
+}
+
+/* ---- Score popup ---- */
+.score-popup {
+  position: fixed;
+  font-size: 1.5rem;
+  font-weight: 900;
+  pointer-events: none;
+  z-index: 300;
+  animation: floatUp .75s ease-out forwards;
+  text-shadow: 0 2px 6px rgba(0,0,0,0.5);
+}
+@keyframes floatUp {
+  0%   { transform: translateY(0)   scale(1);   opacity: 1; }
+  100% { transform: translateY(-65px) scale(1.15); opacity: 0; }
+}
+
+/* ---- Miss flash ---- */
+.miss-flash {
+  position: fixed; inset: 0;
+  background: rgba(229,57,53,0.2);
+  pointer-events: none;
+  z-index: 150;
+  animation: flashFade .35s ease-out forwards;
+}
+@keyframes flashFade {
+  to { opacity: 0; }
+}
+
+/* ---- Combo badge ---- */
+#combo-badge {
+  position: fixed;
+  top: 80px; right: 16px;
+  background: #f59e0b;
+  color: #1a1200;
+  font-size: .85rem;
+  font-weight: 800;
+  padding: 4px 12px;
+  border-radius: 20px;
+  z-index: 100;
+  opacity: 0;
+  transition: opacity .2s;
+  pointer-events: none;
+}
+#combo-badge.visible { opacity: 1; }
+
+/* ---- End Screen ---- */
+#screen-end {
+  background: linear-gradient(160deg, #0d2b4e 0%, #1a4d9e 100%);
+  flex-direction: column;
+  color: white;
+}
+
+.end-card {
+  background: rgba(255,255,255,0.1);
+  border: 1px solid rgba(255,255,255,0.2);
+  border-radius: 18px;
+  padding: 2rem 2.5rem;
+  text-align: center;
+  max-width: 520px;
+  width: 92%;
+}
+.end-card h2 { font-size: 1.5rem; font-weight: 700; margin-bottom: .5rem; }
+
+.final-score-wrap { margin: .6rem 0 .3rem; }
+.final-score { font-size: 4.5rem; font-weight: 900; color: #fbbf24; line-height: 1; }
+.score-sub { font-size: .85rem; opacity: .65; margin-bottom: 1.4rem; }
+
+.leaderboard {
+  background: rgba(0,0,0,0.25);
+  border-radius: 12px;
+  padding: 1rem 1.1rem;
+  margin-bottom: 1.4rem;
+  text-align: left;
+}
+.lb-head {
+  font-size: .78rem;
+  opacity: .6;
+  text-transform: uppercase;
+  letter-spacing: .06em;
+  margin-bottom: .75rem;
+  font-weight: 700;
+}
+.lb-entry {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 5px 0;
+  font-size: .95rem;
+  border-bottom: 1px solid rgba(255,255,255,0.08);
+}
+.lb-entry:last-child { border-bottom: none; }
+.lb-rank { width: 22px; font-weight: 700; opacity: .5; font-size: .85rem; text-align: center; }
+.lb-name { flex: 1; font-weight: 600; }
+.lb-pts  { font-weight: 800; color: #fbbf24; }
+.lb-me   { color: #fbbf24; }
+.lb-me .lb-rank { opacity: 1; }
+
+.end-hint {
+  font-size: .85rem;
+  opacity: .65;
+  margin-bottom: 1.2rem;
+  line-height: 1.5;
+}
+
+/* ---- Drop zone ---- */
+.drop-zone {
+  position: absolute;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  font-weight: 800;
+  pointer-events: none;
+  text-shadow: 0 1px 3px rgba(0,0,0,0.4);
+  animation: dzPulse 0.9s ease-in-out infinite alternate;
+}
+@keyframes dzPulse {
+  from { opacity: .55; transform: scale(.97); }
+  to   { opacity: 1;   transform: scale(1);   }
+}
+
+/* ---- Shrink animation (inserted dynamically) ---- */
+
+/* ComputerCampus: adaptive Bedienungshilfe */
+#game-workspace{display:flex;flex:1;min-height:0}
+#game-workspace #desktop{min-width:0}
+#cc-help{width:230px;flex-shrink:0;background:#f8fafc;color:#17324d;border-left:3px solid #bfdbfe;padding:14px;display:flex;flex-direction:column;gap:12px;overflow:auto;font-family:inherit}
+#cc-help h2{font-size:1.05rem;margin:0}
+#cc-help p{font-size:.82rem;line-height:1.45;margin:0}
+#cc-help button{padding:9px;border:0;border-radius:9px;background:#1d4ed8;color:white;font-weight:700;cursor:pointer}
+#cc-help-visual{height:120px;border-radius:12px;background:#e0efff;display:flex;align-items:center;justify-content:center}
+.cc-device{width:67px;height:95px;border:3px solid #2563eb;border-radius:32px;position:relative;background:white;overflow:hidden}
+.cc-device:before{content:"";position:absolute;left:50%;height:38px;top:0;border-left:2px solid #2563eb}
+.cc-device:after{content:"";position:absolute;top:38px;left:0;right:0;border-top:2px solid #2563eb}
+.cc-active{position:absolute;left:3px;top:3px;width:27px;height:31px;border-radius:18px;background:#93c5fd;animation:cc-click 1.6s infinite}
+.cc-device.double .cc-active{animation-duration:.7s}
+.cc-device.drag{animation:cc-drag 2s infinite}
+.cc-device.close .cc-active{background:#f87171}
+.cc-device.right .cc-active{left:36px;width:25px;background:#a16207;animation:cc-right-click 1.6s infinite}
+@keyframes cc-right-click{0%,40%,100%{background:#d6d3d1;transform:translateY(0)}16%{background:#292524;transform:translateY(4px)}}
+#cc-help-visual .cc-device.right{border-color:#292524}
+#cc-help-visual .cc-device.right:before,#cc-help-visual .cc-device.right:after{border-color:#292524}
+.cc-help-action{font-size:12px;color:#292524;text-align:center;font-weight:800}
+#cc-help-visual{flex-direction:column;gap:5px}
+@keyframes cc-click{0%,45%,100%{background:#93c5fd}18%{background:#1d4ed8}}
+@keyframes cc-drag{0%,100%{transform:translateX(-24px)}50%{transform:translateX(25px)}}
+#cc-help-count{font-weight:700}
+@media(max-width:740px){#cc-help{width:175px;padding:8px}#cc-help-visual{height:90px}.cc-device{transform:scale(.7)}}
+#cc-challenge-progress{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:6px;padding:10px;background:#0f172a;color:#fff}
+#cc-challenge-progress[hidden]{display:none}
+.cc-progress-item{padding:8px 5px;border-radius:8px;background:#334155;text-align:center;font-size:13px;line-height:1.5;border:2px solid transparent}
+.cc-progress-item.active{border-color:#fbbf24;background:#1e40af}
+.cc-progress-item.passed{background:#166534}
+.cc-progress-item.failed{background:#7f1d1d}
+.cc-progress-item strong{display:block;font-size:15px}
+@media(max-width:800px){#cc-challenge-progress{grid-template-columns:repeat(5,minmax(140px,1fr));overflow-x:auto}.cc-progress-item{font-size:12px}}
+#cc-help-visual .cc-device{width:125px;height:85px;border-radius:13px;background:#dbeafe;border:5px solid #64748b}#cc-help-visual .cc-device:before,#cc-help-visual .cc-device:after{display:none}#cc-help-visual .cc-active{left:42px;top:30px;width:32px;height:23px;border-radius:50%}#cc-help-visual .cc-device.right .cc-active{left:48px;width:48px;background:#2563eb}#cc-help-visual .cc-device.drag{animation:cc-drag 2s infinite}</style>
+</head>
+<body>
+
+<!-- ====== START SCREEN ====== -->
+<div class="screen" id="screen-start">
+  <div class="start-card">
+    <h1>💻 Touchpad-Challenge</h1>
+    <p class="sub">Touchpad-Training · Klasse 5 · Tippen, Klicken und Ziehen</p>
+    <div class="instructions">
+      <div class="task-row">
+        <span class="badge b-green">Einmal klicken</span>
+        <span>Einmal auf dem Touchpad tippen und den Ordner auswählen</span>
+      </div>
+      <div class="task-row">
+        <span class="badge b-blue">Doppelklick</span>
+        <span>Zweimal schnell auf dem Touchpad tippen</span>
+      </div>
+      <div class="task-row">
+        <span class="badge" style="background:#111111;color:#ffffff;border:2px solid #ffffff">Rechtsklick</span>
+        <span>Mit zwei Fingern tippen oder unten rechts drücken</span>
+      </div>
+      <div class="task-row">
+        <span class="badge b-red">Fenster schließen</span>
+        <span>Auf das rote ✕ in der Titelleiste klicken</span>
+      </div>
+      <div class="task-row">
+        <span class="badge b-purple">Fenster verschieben</span>
+        <span>Touchpad gedrückt halten und Fenster in die Zielzone ziehen</span>
+      </div>
+    </div>
+    <input type="text" id="name-input" placeholder="Dein Name …" maxlength="20" autocomplete="off">
+    <div class="mode-buttons">
+      <button class="btn-mode active" id="mode-challenge" onclick="selectMode('challenge')">⏱️ Challenge<small>5 × 15 Aufgaben · je 80 %</small></button>
+      <button class="btn-mode" id="mode-practice" onclick="selectMode('practice')">🎯 Übungsmodus<small>Kein Zeitlimit</small></button>
+    </div>
+    <button class="btn-primary" onclick="startGame()">Los geht's! 🚀</button>
+  </div>
+</div>
+
+<!-- ====== RULES SCREEN ====== -->
+<div class="screen hidden" id="screen-rules">
+ <div class="start-card">
+  <h1>🎯 Deine Challenge</h1>
+  <p style="font-weight:800;color:#16a34a">ComputerCampus · Touchpad Version 1 · 8 Minuten · 75 Aufgaben</p>
+  <p>Du bearbeitest fünf Bereiche mit jeweils <strong>15 Aufgaben</strong>:</p>
+  <p>Einfachklick · Doppelklick · Rechtsklick · Fenster schließen · Drag &amp; Drop</p>
+  <p><strong>Bestehensregel:</strong> In jedem Bereich mindestens <strong>12 von 15 Aufgaben (80 %)</strong> richtig lösen. Nur dann wird das Tastaturtraining freigeschaltet.</p>
+  <p><strong>Zeit:</strong> Insgesamt maximal 8 Minuten. Pro Aufgabe hast du maximal 10 Sekunden. Verpasste Aufgaben zählen als Fehler.</p>
+  <p>Deinen Fortschritt siehst du oben im Spielfeld. Die Bedienungshilfe ist in der Challenge ausgeschaltet.</p>
+  <button class="btn-primary" onclick="ccStartChallenge()">Verstanden – Countdown starten</button>
+  <p><button type="button" onclick="resetToStart()" style="margin-top:12px">Zurück zur Auswahl</button></p>
+ </div>
+</div>
+<!-- ====== GAME SCREEN ====== -->
+<div class="screen hidden" id="screen-game">
+  <div id="hud">
+    <span class="hud-name" id="hud-name">Spieler</span>
+    <div class="hud-score-wrap">Punkte: <span id="hud-score">0</span></div>
+    <span id="hud-timer">60</span>
+    <button id="stop-btn" class="hidden" onclick="endGame()">■ Beenden</button>
+  </div>
+  <div id="task-bar"></div><div id="cc-challenge-progress" hidden aria-live="polite"></div>
+  <div id="game-workspace"><div id="desktop"></div>
+<aside id="cc-help" aria-label="Bedienungshilfe">
+<h2>💡 Bedienungshilfe</h2>
+<p id="cc-help-task">Die Hilfe passt sich an die Aufgabe an.</p>
+<div id="cc-help-visual" aria-hidden="true"><div class="cc-device"><div class="cc-active"></div></div><span id="cc-help-action" class="cc-help-action"></span></div>
+<p id="cc-help-count">Erfolge: 0 von 5</p>
+<button type="button" id="cc-help-toggle" onclick="ccToggleHelp()">Hilfe ausblenden</button>
+
+</aside></div>
+</div>
+
+<!-- Combo badge -->
+<div id="combo-badge">🔥 Combo!</div>
+
+<!-- Countdown overlay -->
+<div id="countdown" class="hidden"></div>
+
+<!-- ====== END SCREEN ====== -->
+<div class="screen hidden" id="screen-end">
+  <div class="end-card">
+    <h2 id="end-heading">Zeit abgelaufen! ⏱️</h2>
+    <div class="final-score-wrap">
+      <div class="final-score" id="end-score">0</div>
+    </div>
+    <div class="score-sub">Punkte · <span id="end-name"></span></div>
+    <div class="leaderboard" id="lb-section">
+      <div class="lb-head">🏆 Bestenliste (dieser PC)</div>
+      <div id="lb-list"></div>
+    </div>
+    <p class="end-hint" id="end-hint">Vergleiche deinen Score mit deinen Mitschülern!</p>
+    <button class="btn-primary" onclick="resetToStart()">Nochmal spielen</button>
+    <p style="margin-top:12px"><a href="../" style="color:#2563eb;font-weight:700">Zur Stationsübersicht →</a></p>
+  </div>
+</div>
+
+<script>
+// ===== CONFIG =====
+const GAME_DURATION = 480; // Maximal 8 Minuten für 5 × 15 Aufgaben
+const LB_KEY = 'desktop_challenge_v1';
+
+const FOLDER_NAMES = [
+  'Hausaufgaben', 'Bilder', 'Musik', 'Downloads',
+  'Dokumente', 'Informatik', 'Klasse 5a', 'Projekte',
+  'Videos', 'Fotos', 'Spiele', 'Schule'
+];
+
+const WINDOW_TITLES = [
+  'Datei-Explorer', 'Notepad', 'Bilder', 'Dokumente',
+  'Downloads', 'Rechner', 'Paint', 'Einstellungen'
+];
+
+// ===== STATE =====
+let practiceMode = false;
+let ccChallengeHits = 0;
+let ccChallengeAttempts = 0;
+const CC_CHALLENGE_TYPES = ['single','double','right','close','drag'];
+let CC_CHALLENGE_TASKS = [];
+function ccCreateBalancedTasks() {
+  // 15 zufällige Runden mit jeweils allen fünf unterschiedlichen Bedienhandlungen.
+  // Dadurch wechselt der Aufgabentyp garantiert nach jedem Versuch.
+  const tasks = [];
+  let previous = null;
+  for (let round = 0; round < 15; round++) {
+    const group = [...CC_CHALLENGE_TYPES];
+    for (let i = group.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [group[i], group[j]] = [group[j], group[i]];
+    }
+    if (group[0] === previous) {
+      const j = 1 + Math.floor(Math.random() * (group.length - 1));
+      [group[0], group[j]] = [group[j], group[0]];
+    }
+    tasks.push(...group);
+    previous = group[group.length - 1];
+  }
+  return tasks;
+}
+let ccHitsByType = Object.fromEntries(CC_CHALLENGE_TYPES.map(task => [task,0]));
+const CC_PROGRESS_KEY = 'computercampus-progress-v1';
+let score       = 0;
+let timeLeft    = GAME_DURATION;
+let gameActive  = false;
+let playerName  = '';
+let timerIntvl  = null;
+let activeTargets = [];
+let targetTmout   = null;
+let combo       = 0;
+let comboTmout  = null;
+let currentTask = null;
+let dropZoneEl  = null;
+let isDragging  = false;
+let dragEl      = null;
+let dragOffsetX = 0;
+let dragOffsetY = 0;
+
+// ===== HELPERS =====
+function rand(arr)    { return arr[Math.floor(Math.random() * arr.length)]; }
+function clamp(v,a,b) { return Math.max(a, Math.min(b, v)); }
+
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.add('hidden'));
+  document.getElementById(id).classList.remove('hidden');
+}
+
+// ===== GAME FLOW =====
+const ccSuccess = {single:0,double:0,right:0,close:0,drag:0};
+let ccHelpManual = null;
+let ccShownTask = 'single';
+let ccFirstTaskPending = true;
+const ccInstructions = {
+ single:'Einmal mit einem Finger auf das Touchpad tippen.',
+ double:'Zweimal schnell mit einem Finger auf das Touchpad tippen.',
+ right:'Mit zwei Fingern auf das Touchpad tippen oder unten rechts drücken. Dadurch öffnet sich ein Kontextmenü.',
+ close:'Den Zeiger zum X oben rechts bewegen und auf dem Touchpad tippen.',
+ drag:'Touchpad gedrückt halten und den Finger bewegen. Alternativ mit einem Finger unten drücken und mit dem anderen ziehen. Zum Ablegen loslassen.',
+ mixed:'Achte auf die Farbe der Ziele: Grün = Klick, Orange = Doppelklick, Schwarz = Rechtsklick, Rot = Schließen.'
+};
+function ccTaskFor(el){
+ return el.dataset.ccTask || (el.classList.contains('drag-win')?'drag':currentTask);
+}
+function ccHelpVisible(task){
+ return practiceMode && (ccHelpManual === true || (ccHelpManual === null && (ccSuccess[task]||0)<5));
+}
+function ccRenderHelp(task){
+ ccShownTask = task;
+ const shown = ccHelpVisible(task);
+ const visual = document.getElementById('cc-help-visual');
+ visual.style.display = shown ? 'flex':'none';
+ visual.querySelector('.cc-device').className = 'cc-device '+task;
+ document.getElementById('cc-help-action').textContent = task === 'right' ? 'MIT ZWEI FINGERN TIPPEN' : '';
+ document.getElementById('cc-help-task').textContent = ccInstructions[task];
+ document.getElementById('cc-help-count').textContent = 'Erfolge: '+(ccSuccess[task]||0)+' von 5';
+ document.getElementById('cc-help-toggle').textContent = shown?'Hilfe ausblenden':'Hilfe anzeigen';
+}
+function ccToggleHelp(){
+ const wasVisible=ccHelpVisible(ccShownTask);
+ ccHelpManual = !wasVisible;
+ ccRenderHelp(ccShownTask);
+}
+function selectMode(mode) {
+  practiceMode = (mode === 'practice');
+  document.getElementById('mode-challenge').classList.toggle('active', !practiceMode);
+  document.getElementById('mode-practice').classList.toggle('active',  practiceMode);
+}
+
+function startGame() {
+  playerName = document.getElementById('name-input').value.trim() || 'Anonym';
+  score = 0; timeLeft = GAME_DURATION; combo = 0; gameActive = false;
+  ccChallengeHits = 0; ccChallengeAttempts = 0;
+  ccHitsByType = Object.fromEntries(CC_CHALLENGE_TYPES.map(task => [task,0]));
+  CC_CHALLENGE_TASKS = ccCreateBalancedTasks();
+  ccHelpManual = null;
+  ccFirstTaskPending = true;
+  document.getElementById('cc-help').style.display = practiceMode ? 'flex' : 'none';
+  ccRenderHelp('single');
+  document.getElementById('hud-name').textContent = playerName;
+  document.getElementById('hud-timer').classList.remove('urgent');
+  document.getElementById('stop-btn').classList.toggle('hidden', !practiceMode);
+  if (practiceMode) ccStartChallenge(); else showScreen('screen-rules');
+}
+
+function ccStartChallenge(){
+  showScreen('screen-game');
+  updateHUD();
+  runCountdown(3);
+}
+function runCountdown(n) {
+  const el = document.getElementById('countdown');
+  el.classList.remove('hidden');
+
+  // Force reflow so animation replays each tick
+  el.style.animation = 'none';
+  void el.offsetWidth;
+  el.style.animation = 'countPulse .5s ease-out';
+
+  el.textContent = n > 0 ? n : 'Los!';
+
+  if (n > 0) {
+    setTimeout(() => runCountdown(n - 1), 850);
+  } else {
+    setTimeout(() => {
+      el.classList.add('hidden');
+      beginGame();
+    }, 650);
+  }
+}
+
+function beginGame() {
+  gameActive = true;
+  if (!practiceMode) timerIntvl = setInterval(tickTimer, 1000);
+  spawnNext();
+}
+
+function tickTimer() {
+  timeLeft = Math.max(0, timeLeft - 1);
+  updateHUD();
+  if (timeLeft <= 10) document.getElementById('hud-timer').classList.add('urgent');
+  if (timeLeft === 0) endGame();
+}
+
+function updateHUD() {
+  document.getElementById('hud-score').textContent = score;
+  document.getElementById('hud-timer').textContent = practiceMode ? '∞' : Math.floor(timeLeft/60) + ':' + String(timeLeft%60).padStart(2,'0');
+  const progress = document.getElementById('cc-challenge-progress');
+  progress.hidden = practiceMode;
+  if (practiceMode) return;
+  const labels = {single:'Einfachklick',double:'Doppelklick',right:'Rechtsklick',close:'Fenster schließen',drag:'Drag & Drop'};
+  progress.replaceChildren();
+  CC_CHALLENGE_TYPES.forEach((task,index) => {
+    const completed = CC_CHALLENGE_TASKS.slice(0,ccChallengeAttempts).filter(t => t === task).length;
+    const hits = ccHitsByType[task];
+    const card = document.createElement('div');
+    const isActive = ccChallengeAttempts < CC_CHALLENGE_TASKS.length && CC_CHALLENGE_TASKS[ccChallengeAttempts] === task;
+    card.className = 'cc-progress-item' + (isActive ? ' active' : '') + (completed === 15 ? (hits >= 12 ? ' passed' : ' failed') : '');
+    const name = document.createElement('span');
+    name.textContent = labels[task];
+    const result = document.createElement('strong');
+    result.textContent = hits + ' von 15 erfolgreich';
+    const attempts = document.createElement('small');
+    attempts.textContent = completed + '/15 versucht' + (completed === 15 ? (hits >= 12 ? ' · ✓' : ' · ✗') : '');
+    card.append(name,result,attempts);
+    progress.appendChild(card);
+  });
+}
+
+// ===== TASK LOGIC =====
+function pickTask() {
+  const r = Math.random();
+  if (r < 0.20) return 'single';
+  if (r < 0.40) return 'double';
+  if (r < 0.60) return 'right';
+  if (r < 0.80) return 'close';
+  return 'drag';
+}
+
+function pickNonDragTask() {
+  const r = Math.random();
+  if (r < 0.25) return 'single';
+  if (r < 0.50) return 'double';
+  if (r < 0.75) return 'right';
+  return 'close';
+}
+
+function targetDuration(task) {
+  return task === 'drag' ? 5000 : 3750;
+}
+
+const TASK_LABELS = {
+  single: '👆 Einmal klicken!',
+  double: '✌️ Doppelklick!',
+  right:  '✌️ Zwei-Finger-Klick auf den Ordner!',
+  close:  '✕ Fenster schließen!',
+  drag:   '💻 Mit dem Touchpad Fenster verschieben!',
+  mixed:  '👀 Achte auf die Farbe!',
+};
+const TASK_COLORS = {
+  single: '#4caf50',
+  double: '#f59e0b',
+  right:  '#111111',
+  close:  '#ef5350',
+  drag:   '#7c3aed',
+  mixed:  '#ffffff',
+};
+
+function setTaskBar(task) {
+  const bar = document.getElementById('task-bar');
+  bar.textContent = TASK_LABELS[task];
+  bar.style.color = task === 'right' ? '#ffffff' : TASK_COLORS[task];
+  bar.style.background = task === 'right' ? '#111111' : '';
+  bar.style.textShadow = task === 'right' ? 'none' : `0 2px 10px ${TASK_COLORS[task]}99`;
+}
+
+// ===== SPAWN / REMOVE =====
+function clearTarget() {
+  clearTimeout(targetTmout);
+  targetTmout = null;
+  activeTargets.forEach(el => el.remove());
+  activeTargets = [];
+  if (dropZoneEl) { dropZoneEl.remove(); dropZoneEl = null; }
+  isDragging = false;
+  dragEl = null;
+}
+
+function pickWaveSize() {
+  const r = Math.random();
+  if (r < 0.60) return 1;
+  if (r < 0.90) return 2;
+  return 3;
+}
+
+function spreadPositions(count, dw, dh, elW, elH) {
+  const pad = 60;
+  const minDist = Math.max(elW, elH) + 20;
+  const positions = [];
+  let attempts = 0;
+  while (positions.length < count && attempts < 150) {
+    attempts++;
+    const x = pad + Math.random() * (dw - elW - pad * 2);
+    const y = pad + Math.random() * (dh - elH - pad * 2);
+    if (!positions.some(p => Math.hypot(p.x - x, p.y - y) < minDist))
+      positions.push({ x, y });
+  }
+  // Fallback: spread evenly across width if random placement failed
+  while (positions.length < count) {
+    const i = positions.length;
+    positions.push({
+      x: pad + (i / count) * (dw - elW - pad * 2),
+      y: pad + Math.random() * (dh - elH - pad * 2),
+    });
+  }
+  return positions;
+}
+
+function spawnNext() {
+  if (!gameActive) return;
+  clearTarget();
+
+  const desktop = document.getElementById('desktop');
+  const dw = desktop.clientWidth;
+  const dh = desktop.clientHeight;
+  const elW = 215, elH = 95;
+
+  if (!practiceMode && ccChallengeAttempts >= CC_CHALLENGE_TASKS.length) { endGame(); return; }
+  const waveSize = practiceMode ? (ccFirstTaskPending ? 1 : pickWaveSize()) : 1;
+
+  // Drag only allowed as single target
+  if (waveSize === 1) {
+    currentTask = practiceMode ? (ccFirstTaskPending ? 'right' : pickTask()) : CC_CHALLENGE_TASKS[ccChallengeAttempts];
+    ccFirstTaskPending = false;
+  } else {
+    currentTask = 'mixed';
+  }
+  setTaskBar(currentTask);
+  ccRenderHelp(currentTask);
+
+  const dur = practiceMode ? targetDuration(currentTask) : 10000;
+
+  if (currentTask === 'drag') {
+    const [pos] = spreadPositions(1, dw, dh, elW, elH);
+    const winEl = buildDragWindowTarget(dur);
+    winEl.style.left = pos.x + 'px';
+    winEl.style.top  = pos.y + 'px';
+    desktop.appendChild(winEl);
+    activeTargets.push(winEl);
+
+    let dzPos, att = 0;
+    do {
+      dzPos = {
+        x: 60 + Math.random() * (dw - elW - 120),
+        y: 60 + Math.random() * (dh - elH - 60),
+      };
+      att++;
+    } while (Math.hypot(dzPos.x - pos.x, dzPos.y - pos.y) < 210 && att < 80);
+    dropZoneEl = buildDropZone(elW, elH, dur);
+    dropZoneEl.style.left = dzPos.x + 'px';
+    dropZoneEl.style.top  = dzPos.y + 'px';
+    desktop.appendChild(dropZoneEl);
+  } else {
+    // Each target picks its own task (all non-drag for multi-waves)
+    const tasks = Array.from({ length: waveSize }, () =>
+      currentTask === 'mixed' ? pickNonDragTask() : currentTask
+    );
+    const positions = spreadPositions(waveSize, dw, dh, elW, elH);
+    tasks.forEach((task, i) => {
+      const el = task === 'close'
+        ? buildWindowTarget(dur)
+        : buildFolderTarget(task, dur);
+      el.style.left = positions[i].x + 'px';
+      el.style.top  = positions[i].y + 'px';
+      desktop.appendChild(el);
+      activeTargets.push(el);
+    });
+  }
+
+  if (!practiceMode) {
+    targetTmout = setTimeout(() => {
+      if (!gameActive) return;
+      const remaining = [...activeTargets];
+      activeTargets = [];
+      if (dropZoneEl) { dropZoneEl.remove(); dropZoneEl = null; }
+      isDragging = false; dragEl = null;
+      remaining.forEach(el => { el.classList.add('dying'); setTimeout(() => el.remove(), 130); });
+      if (remaining.length > 0) {
+        combo = 0; score = Math.max(0, score - remaining.length * 5);
+        hideComboBadge(); updateHUD(); flashMiss();
+      }
+      ccChallengeAttempts++;
+      updateHUD();
+      if (ccChallengeAttempts >= CC_CHALLENGE_TASKS.length) endGame();
+      else setTimeout(spawnNext, 150);
+    }, dur);
+  }
+}
+
+// ===== TARGETS =====
+function buildFolderTarget(task, dur) {
+  const name  = rand(FOLDER_NAMES);
+  const color = TASK_COLORS[task];
+
+  const el = document.createElement('div');
+  el.className = 'target';
+  el.dataset.ccTask = task;
+  el.innerHTML = `
+    <div class="folder-wrap" style="border-color:${color}; background:${task === 'right' ? '#111111' : 'rgba(0,0,0,0.18)'};">
+      <div class="folder-icon"></div>
+      <div class="folder-label">${name}</div>
+    </div>
+    ${practiceMode ? '' : `<div class="target-timer" style="background:${color};
+         animation:shrinkBar ${dur}ms linear forwards;"></div>`}
+  `;
+
+  if (task === 'single') {
+    el.addEventListener('click', (e) => { e.stopPropagation(); onHit(el); });
+  } else if (task === 'right') {
+    el.addEventListener('contextmenu', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      // Zeige ein einfaches Kontextmenü, statt den Browserdialog.
+      const menu = document.createElement('div');
+      menu.textContent = '📂 Öffnen   ·   ✏️ Umbenennen   ·   ℹ️ Eigenschaften';
+      menu.style.cssText = 'position:absolute;left:8px;top:78px;min-width:205px;padding:10px;background:white;color:#1e293b;border:2px solid #111111;border-radius:8px;box-shadow:0 5px 15px #0005;z-index:30;font-size:12px;';
+      el.appendChild(menu);
+      setTimeout(() => onHit(el), 550);
+    });
+    el.addEventListener('click', (e) => e.stopPropagation());
+  } else {
+    el.addEventListener('dblclick', (e) => { e.stopPropagation(); onHit(el); });
+    el.addEventListener('click',    (e) => {
+      e.stopPropagation();
+      // Visual hint: brief yellow border flash on single click of double-click target
+      const wrap = el.querySelector('.folder-wrap');
+      wrap.style.borderColor = '#f59e0b';
+      setTimeout(() => { if (el.isConnected) wrap.style.borderColor = color; }, 300);
+    });
+  }
+  return el;
+}
+
+function buildWindowTarget(dur) {
+  const title = rand(WINDOW_TITLES);
+
+  const el = document.createElement('div');
+  el.className = 'target';
+  el.dataset.ccTask = 'close';
+  el.innerHTML = `
+    <div class="window-wrap">
+      <div class="win-titlebar">
+        <span class="win-title-text">${title}</span>
+        <button class="win-close">✕</button>
+        ${practiceMode ? '' : `<div class="target-timer" style="background:#ef5350;
+             animation:shrinkBar ${dur}ms linear forwards;
+             position:absolute; bottom:0; left:0; right:0; height:3px; border-radius:0;"></div>`}
+      </div>
+      <div class="win-body">Dieses Fenster ist geöffnet. Schließe es!</div>
+    </div>
+  `;
+
+  el.querySelector('.win-close').addEventListener('click', (e) => {
+    e.stopPropagation();
+    onHit(el);
+  });
+  return el;
+}
+
+function buildDragWindowTarget(dur) {
+  const title = rand(WINDOW_TITLES);
+  const color = TASK_COLORS['drag'];
+  const el = document.createElement('div');
+  el.className = 'target drag-win';
+  el.dataset.ccTask = 'drag';
+  el.innerHTML = `
+    <div class="window-wrap" style="cursor:default;">
+      <div class="win-titlebar" style="background:${color}; cursor:grab;">
+        <span class="win-title-text">${title}</span>
+        <span style="font-size:11px;color:rgba(255,255,255,0.7);flex-shrink:0;">← ziehen</span>
+        ${practiceMode ? '' : `<div class="target-timer" style="background:rgba(255,255,255,0.5);
+             animation:shrinkBar ${dur}ms linear forwards;
+             position:absolute; bottom:0; left:0; right:0; height:3px; border-radius:0;"></div>`}
+      </div>
+      <div class="win-body">Titelleiste halten und in die Zielzone ziehen!</div>
+    </div>
+  `;
+  const titlebar = el.querySelector('.win-titlebar');
+  titlebar.addEventListener('mousedown', (e) => {
+    if (!gameActive) return;
+    e.preventDefault();
+    isDragging   = true;
+    dragEl       = el;
+    const r      = el.getBoundingClientRect();
+    dragOffsetX  = e.clientX - r.left;
+    dragOffsetY  = e.clientY - r.top;
+    titlebar.style.cursor = 'grabbing';
+    el.style.zIndex = '50';
+  });
+  return el;
+}
+
+function buildDropZone(w, h, dur) {
+  const color = TASK_COLORS['drag'];
+  const el = document.createElement('div');
+  el.className = 'drop-zone';
+  el.style.cssText = `width:${w}px; height:${h}px;
+    border: 3px dashed ${color}; background:${color}22; color:${color};`;
+  el.innerHTML = `<span>📂 Hier ablegen!</span>`;
+  return el;
+}
+
+// ===== HIT =====
+function onHit(el) {
+  if (!gameActive || !activeTargets.includes(el)) return;
+
+  combo++;
+  const task = ccTaskFor(el);
+  if (!practiceMode) { ccChallengeHits++; ccChallengeAttempts++; ccHitsByType[task]++; }
+  const pts = combo >= 3 ? 15 : 10;
+  if (practiceMode && ccSuccess[task] !== undefined) ccSuccess[task] = Math.min(5,ccSuccess[task]+1);
+  ccRenderHelp(task);
+  score += pts;
+  updateHUD();
+  if (combo >= 3) showComboBadge();
+  showScorePopup(el, '+' + pts, combo >= 3 ? '#fbbf24' : '#4caf50');
+
+  activeTargets = activeTargets.filter(t => t !== el);
+  el.classList.add('dying');
+  setTimeout(() => el.remove(), 130);
+
+  if (activeTargets.length === 0) {
+    clearTimeout(targetTmout);
+    targetTmout = null;
+    if (!practiceMode && ccChallengeAttempts >= 100) endGame();
+    else setTimeout(spawnNext, 80);
+  }
+}
+
+// ===== COMBO BADGE =====
+function showComboBadge() {
+  clearTimeout(comboTmout);
+  const badge = document.getElementById('combo-badge');
+  badge.textContent = combo >= 5 ? '🔥🔥 Super-Combo! ×' + combo
+                    : combo >= 3 ? '🔥 Combo! ×' + combo
+                    : '';
+  badge.classList.add('visible');
+  comboTmout = setTimeout(hideComboBadge, 1200);
+}
+function hideComboBadge() {
+  document.getElementById('combo-badge').classList.remove('visible');
+}
+
+// ===== SCORE POPUP =====
+function showScorePopup(el, text, color) {
+  const rect = el.getBoundingClientRect();
+  const pop  = document.createElement('div');
+  pop.className   = 'score-popup';
+  pop.textContent = text;
+  pop.style.color = color;
+  pop.style.left  = (rect.left + rect.width  / 2 - 24) + 'px';
+  pop.style.top   = (rect.top  + rect.height / 2 - 10) + 'px';
+  document.body.appendChild(pop);
+  setTimeout(() => pop.remove(), 750);
+}
+
+// ===== MISS FLASH =====
+function flashMiss() {
+  const f = document.createElement('div');
+  f.className = 'miss-flash';
+  document.body.appendChild(f);
+  setTimeout(() => f.remove(), 380);
+}
+
+// ===== END GAME =====
+function endGame() {
+  gameActive = false;
+  clearInterval(timerIntvl);
+  clearTarget();
+  hideComboBadge();
+
+  const lbSection = document.getElementById('lb-section');
+  const endHint   = document.getElementById('end-hint');
+  const heading   = document.getElementById('end-heading');
+
+  if (practiceMode) {
+    heading.textContent  = 'Üben beendet! 🎯';
+    lbSection.classList.add('hidden');
+    endHint.textContent  = 'Gut geübt! Im Challenge-Modus kannst du dich mit anderen messen.';
+  } else {
+    const passed = CC_CHALLENGE_TYPES.every(task => ccHitsByType[task] >= 12);
+    heading.textContent = passed ? 'Challenge bestanden! 🎉' : 'Weiter üben! 💪';
+    lbSection.classList.add('hidden');
+    endHint.textContent = CC_CHALLENGE_TYPES.map(task =>
+      TASK_LABELS[task].replace(/[!]/g,'') + ': ' + ccHitsByType[task] + '/15'
+    ).join(' | ') + '. ' + (passed ?
+      'Alle fünf Touchpad-Bereiche bestanden! Ob die Tastatur freigeschaltet ist, hängt von deiner Geräteauswahl ab.' :
+      'Du brauchst in JEDEM Bereich mindestens 12 von 15 Erfolgen.');
+    if (passed) {
+      try {
+        const progress = JSON.parse(localStorage.getItem(CC_PROGRESS_KEY) || '{}');
+        progress.touchpad = true;
+        localStorage.setItem(CC_PROGRESS_KEY, JSON.stringify(progress));
+      } catch (_) {}
+    }
+  }
+
+  setTimeout(() => {
+    document.getElementById('end-score').textContent = score;
+    document.getElementById('end-name').textContent  = playerName;
+    showScreen('screen-end');
+  }, 400);
+}
+
+// ===== LEADERBOARD =====
+function saveScore(name, pts) {
+  const list = loadScores();
+  list.push({ name, pts });
+  list.sort((a, b) => b.pts - a.pts);
+  try { localStorage.setItem(LB_KEY, JSON.stringify(list.slice(0, 10))); } catch {}
+}
+
+function loadScores() {
+  try { return JSON.parse(localStorage.getItem(LB_KEY)) || []; } catch { return []; }
+}
+
+function renderLeaderboard() {
+  const scores = loadScores();
+  const el = document.getElementById('lb-list');
+  if (!scores.length) {
+    el.innerHTML = '<div style="opacity:.55;font-size:.9rem">Noch keine Einträge.</div>';
+    return;
+  }
+  // Highlight the entry that matches current player+score (first match)
+  let highlighted = false;
+  el.innerHTML = scores.slice(0, 6).map((s, i) => {
+    const isMe = !highlighted && s.name === playerName && s.pts === score;
+    if (isMe) highlighted = true;
+    return `<div class="lb-entry ${isMe ? 'lb-me' : ''}">
+      <span class="lb-rank">${medals[i] || (i+1)+'.'}</span>
+      <span class="lb-name">${escHtml(s.name)}</span>
+      <span class="lb-pts">${s.pts}</span>
+    </div>`;
+  }).join('');
+}
+
+const medals = ['🥇','🥈','🥉'];
+
+function escHtml(s) {
+  return s.replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+// ===== RESET =====
+function resetToStart() {
+  showScreen('screen-start');
+  document.getElementById('hud-timer').classList.remove('urgent');
+}
+
+// ===== INIT =====
+// Enter key on name input
+document.getElementById('name-input').addEventListener('keydown', e => {
+  if (e.key === 'Enter') startGame();
+});
+
+// Prevent right-click context menu during game
+document.getElementById('screen-game').addEventListener('contextmenu', e => e.preventDefault());
+
+// ===== DRAG HANDLERS =====
+document.addEventListener('mousemove', (e) => {
+  if (!isDragging || !dragEl) return;
+  const desktop = document.getElementById('desktop');
+  const rect = desktop.getBoundingClientRect();
+  dragEl.style.left = (e.clientX - rect.left - dragOffsetX) + 'px';
+  dragEl.style.top  = (e.clientY - rect.top  - dragOffsetY) + 'px';
+});
+
+document.addEventListener('mouseup', (e) => {
+  if (!isDragging || !dragEl) return;
+  isDragging = false;
+  dragEl.style.zIndex = '';
+  const tb = dragEl.querySelector('.win-titlebar');
+  if (tb) tb.style.cursor = 'grab';
+
+  if (!dropZoneEl || !gameActive) { dragEl = null; return; }
+
+  // Hit if center of dragged window lands inside drop zone
+  const wr = dragEl.getBoundingClientRect();
+  const dr = dropZoneEl.getBoundingClientRect();
+  const cx = wr.left + wr.width  / 2;
+  const cy = wr.top  + wr.height / 2;
+  const hit = cx >= dr.left && cx <= dr.right && cy >= dr.top && cy <= dr.bottom;
+
+  const el = dragEl;
+  dragEl = null;
+  if (hit) {
+    dropZoneEl.remove();
+    dropZoneEl = null;
+    onHit(el);
+  }
+});
+
+// Inject shrinkBar keyframe
+const ks = document.createElement('style');
+ks.textContent = `@keyframes shrinkBar { from { transform:scaleX(1); } to { transform:scaleX(0); } }`;
+document.head.appendChild(ks);
+</script>
+</body>
+</html>
