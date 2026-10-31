@@ -8,24 +8,24 @@
 <main><p><a href="../">← Zurück zum Campus</a></p>
 <div class="progress-note" id="progress-note" role="status">Fortschritt wird geladen …</div>
 <div class="worlds">
-<article class="world active station"><span class="symbol">🖱️</span><h2>1. Maustraining</h2><p>Trainiere Klick, Doppelklick, Rechtsklick, Fensterschließen und Ziehen.</p><p>Löse je 15 Aufgaben zu fünf Mausaktionen. Mindestens 12 von 15 pro Bereich müssen richtig sein (80 %).</p><p class="status" id="mouse-status">Noch nicht bestanden</p><a href="maus/">Üben oder Challenge starten</a></article>
-<article class="world station locked" id="keyboard-card"><span class="symbol">⌨️</span><h2>2. Tastaturtraining</h2><p>Entdecke die Tastatur und ihre Tasten.</p><p class="status" id="keyboard-status">🔒 Erst Maustraining bestehen</p><a href="tastatur/" id="keyboard-link" hidden>Tastaturtraining öffnen</a><button id="keyboard-lock" disabled>🔒 Gesperrt</button></article>
-<article class="world station locked" id="race-card"><span class="symbol">🏁</span><h2>3. Tipp-Rennen</h2><p>Übe Sonderzeichen auf der Tastatur.</p><p class="status">🔒 Freischaltung nach der Tastatur-Challenge</p><button disabled>🔒 Gesperrt</button></article>
+<article class="world active station" id="mouse-card"><span class="symbol">🖱️</span><h2>1. Maustraining</h2><p>Einfachklick, Doppelklick, Rechtsklick, Schließen und Ziehen.</p><p>15 Aufgaben je Bedienhandlung, mindestens 12 richtige.</p><p class="status" id="mouse-status">Bereit zum Üben</p><a href="maus/">Maustraining starten</a></article>
+<article class="world active station" id="touchpad-card"><span class="symbol">💻</span><h2>2. Touchpad-Training</h2><p>Tippen, Doppeltippen, Zwei-Finger-Klick, Schließen und Ziehen.</p><p>15 Aufgaben je Bedienhandlung, mindestens 12 richtige.</p><p class="status" id="touchpad-status">Bereit zum Üben</p><a href="touchpad/">Touchpad-Training starten</a></article>
+<article class="world station locked" id="keyboard-card"><span class="symbol">⌨️</span><h2>3. Tastaturtraining</h2><p>Entdecke die Tastatur und ihre Tasten.</p><p class="status" id="keyboard-status">🔒 Erst die erforderlichen Eingabegeräte bestehen</p><a href="tastatur/" id="keyboard-link" hidden>Tastaturtraining öffnen</a><button id="keyboard-lock" disabled>🔒 Gesperrt</button></article>
+<article class="world station locked" id="race-card"><span class="symbol">🏁</span><h2>4. Tipp-Rennen</h2><p>Übe Sonderzeichen auf der Tastatur.</p><p class="status">🔒 Freischaltung nach der Tastatur-Challenge</p><button disabled>🔒 Gesperrt</button></article>
 </div>
-<p>Das Touchpad-Modul, die Tastatur-Challenge und die Abschlussmission werden noch ergänzt. Die Freischaltung wird derzeit nur in diesem Browser gespeichert; Schülerkonten folgen später.</p>
+<p>Wähle auf der <a href="../">Campus-Startseite</a> dein Eingabegerät. Bei „Beides“ musst du Maus und Touchpad bestehen. Der Gerätevergleich und die Tastatur-Challenge folgen später. Der Fortschritt wird derzeit nur in diesem Browser gespeichert.</p>
 </main><footer>Originalspiele von Alexander Trapp (GitHub: altra102), Lizenz CC BY-SA 4.0. <a href="../ATTRIBUTION.md">Urheberhinweise</a></footer>
 <script>
 (function(){
- let progress={};
- try{progress=JSON.parse(localStorage.getItem('computercampus-progress-v1')||'{}')}catch(_){}
- const passed=progress.mouse===true;
- document.getElementById('mouse-status').textContent=passed?'✅ Challenge bestanden – jederzeit wiederholbar':'🔓 Bereit zum Üben';
- document.getElementById('progress-note').textContent=passed?'🎉 Maustraining bestanden! Die Tastatur-Station ist freigeschaltet.':'Starte mit dem Maustraining. Erst wenn du in allen fünf Mausbereichen mindestens 12 von 15 Aufgaben richtig löst, wird die Tastatur-Station freigeschaltet.';
- if(passed){
-  document.getElementById('keyboard-card').classList.remove('locked');
-  document.getElementById('keyboard-status').textContent='🔓 Freigeschaltet – Übungsmodus verfügbar';
-  document.getElementById('keyboard-link').hidden=false;
-  document.getElementById('keyboard-lock').hidden=true;
- }
+ let progress={}, device='mouse';
+ try {progress=JSON.parse(localStorage.getItem('computercampus-progress-v1')||'{}')||{};device=localStorage.getItem('computercampus-device-v1')||'mouse'}catch(_){}
+ if(!['mouse','touchpad','both'].includes(device))device='mouse';
+ const mouse=progress.mouse===true,touchpad=progress.touchpad===true;
+ document.getElementById('mouse-status').textContent=mouse?'✅ Bestanden – wiederholbar':'🔓 Bereit zum Üben';
+ document.getElementById('touchpad-status').textContent=touchpad?'✅ Bestanden – wiederholbar':'🔓 Bereit zum Üben';
+ const passed=device==='both'?(mouse&&touchpad):device==='touchpad'?touchpad:mouse;
+ const needed=device==='both'?'Maus und Touchpad':device==='touchpad'?'Touchpad':'Maus';
+ document.getElementById('progress-note').textContent=passed?'🎉 '+needed+' bestanden! Tastaturtraining freigeschaltet.':'Deine Auswahl: '+needed+'. Bestehe die Challenge mit mindestens 12 von 15 richtigen Antworten in jedem der fünf Bereiche.';
+ if(passed){document.getElementById('keyboard-card').classList.remove('locked');document.getElementById('keyboard-status').textContent='🔓 Freigeschaltet – Übungsmodus verfügbar';document.getElementById('keyboard-link').hidden=false;document.getElementById('keyboard-lock').hidden=true}
 })();
 </script></body></html>
