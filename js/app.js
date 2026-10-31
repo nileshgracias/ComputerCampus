@@ -25,10 +25,14 @@ document.getElementById("save-device").addEventListener("click", () => {
   const list = document.createElement("ul");
   for (const step of steps) {
     const item = document.createElement("li");
-    item.textContent = step + " (wird entwickelt)";
+    item.textContent = step + (step === "Gerätevergleich" ? " (folgt später)" : " (jetzt spielbar)");
     list.appendChild(item);
   }
   const note = document.createElement("p");
-  note.textContent = "Die praktische Bedienung und Abschlussmission ergänzen wir als Nächstes.";
-  plan.append(heading, list, note);
+  note.textContent = "Die Tastatur wird nach Bestehen der benötigten Eingabegeräte freigeschaltet.";
+  const link = document.createElement("a");
+  link.href = "games/";
+  link.textContent = "Zur Lernwelt 1 und den Spielen →";
+  link.style.cssText = "display:inline-block;margin-top:10px;padding:12px 16px;border-radius:9px;background:#1d4ed8;color:white;font-weight:700;text-decoration:none";
+  plan.append(heading, list, note, link);
 });
